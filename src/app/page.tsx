@@ -4,16 +4,21 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ImageUploader } from '@/components/ImageUploader';
 import { useOCR } from '@/hooks/useOCR';
+import { useToast } from '@/components/Toast';
 import type { OCRResult } from '@/types';
 
 export default function Home() {
   const router = useRouter();
   const { isProcessing, error, processImage } = useOCR();
+  const { addToast } = useToast();
   const [isCreating, setIsCreating] = useState(false);
 
   const handleUpload = async (file: File) => {
     const result = await processImage(file);
     if (result) {
+      if (result.items.length > 0) {
+        addToast(`Found ${result.items.length} items from receipt`, 'success');
+      }
       await createSession(result);
     }
   };
@@ -47,7 +52,7 @@ export default function Home() {
       router.push(`/session/${session.id}`);
     } catch (err) {
       console.error('Failed to create session:', err);
-      alert('Failed to create session. Please try again.');
+      addToast('Failed to create session. Please try again.', 'error');
     } finally {
       setIsCreating(false);
     }

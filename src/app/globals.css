@@ -19,3 +19,79 @@ body {
   background: var(--background);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+@keyframes slide-in {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-in {
+  animation: slide-in 0.3s ease-out;
+}
+
+/* Ensure minimum touch target size */
+button,
+a,
+input[type="checkbox"],
+input[type="radio"],
+[role="button"] {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* Exception for inline text buttons */
+button.inline-btn,
+a.inline-link {
+  min-height: auto;
+  min-width: auto;
+}
+
+/* Improve input styling on mobile */
+input[type="text"],
+input[type="number"],
+input[type="email"],
+textarea {
+  font-size: 16px; /* Prevents iOS zoom on focus */
+}
+
+/* Better focus states */
+*:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Hide scrollbar but keep functionality */
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Loading skeleton animation */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.skeleton {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
