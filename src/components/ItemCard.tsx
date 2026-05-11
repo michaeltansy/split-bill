@@ -185,7 +185,7 @@ export function ItemCard({
       <div className="border rounded-lg p-4 bg-green-50">
         <div className="mb-3">
           <span className="font-medium">{item.name}</span>
-          <span className="text-gray-500 ml-2">${item.price.toFixed(2)}</span>
+          <span className="text-gray-500 ml-2">IDR {item.price.toFixed(0)}</span>
         </div>
 
         <div className="mb-3">
@@ -281,10 +281,10 @@ export function ItemCard({
             )}
           </div>
           <div className="text-lg font-semibold text-gray-800">
-            ${(item.price * item.quantity).toFixed(2)}
+            IDR {(item.price * item.quantity).toFixed(0)}
             {item.quantity > 1 && (
               <span className="text-sm font-normal text-gray-500 ml-1">
-                (${item.price.toFixed(2)} each)
+                (IDR {item.price.toFixed(0)} each)
               </span>
             )}
           </div>

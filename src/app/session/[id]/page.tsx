@@ -10,7 +10,6 @@ import { ItemList } from '@/components/ItemList';
 import { TaxServiceInput } from '@/components/TaxServiceInput';
 import { BillSummary } from '@/components/BillSummary';
 import { ParticipantView } from '@/components/ParticipantView';
-import { ReceiptPreview } from '@/components/ReceiptPreview';
 import { ShareModal } from '@/components/ShareModal';
 import type { Session, ItemAssignment } from '@/types';
 
@@ -30,7 +29,7 @@ export default function SessionPage({
     isLoading,
     error,
     updateSession,
-    addParticipant,
+    addParticipants,
     removeParticipant,
     addItem,
     updateItem,
@@ -64,11 +63,11 @@ export default function SessionPage({
   const allAssignments: ItemAssignment[] = items.flatMap((item) => item.assignments || []);
 
   // Wrapper functions for components
-  const handleAddParticipant = useCallback(
-    async (name: string) => {
-      await addParticipant(name);
+  const handleCommitParticipants = useCallback(
+    async (names: string[]) => {
+      await addParticipants(names);
     },
-    [addParticipant]
+    [addParticipants]
   );
 
   const handleRemoveParticipant = useCallback(
@@ -338,13 +337,6 @@ export default function SessionPage({
           </div>
         )}
 
-        {/* Receipt Preview (if available) */}
-        {session.receipt_image_url && (
-          <div className="mb-6">
-            <ReceiptPreview imageUrl={session.receipt_image_url} />
-          </div>
-        )}
-
         {/* Main content - responsive grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {/* Left column: Receipt Summary & Participants */}
@@ -365,7 +357,7 @@ export default function SessionPage({
               </h2>
               <ParticipantManager
                 participants={participants}
-                onAdd={handleAddParticipant}
+                onCommit={handleCommitParticipants}
                 onRemove={handleRemoveParticipant}
               />
             </section>

@@ -14,7 +14,7 @@ export async function POST(
     if (Array.isArray(body.items)) {
       const items = body.items.map((item: any) => ({
         session_id: sessionId,
-        name: item.name,
+        name: String(item.name ?? '').trim().slice(0, 255),
         price: item.price,
         quantity: item.quantity || 1,
       }));
@@ -39,7 +39,7 @@ export async function POST(
       .from('items')
       .insert({
         session_id: sessionId,
-        name: body.name,
+        name: String(body.name ?? '').trim().slice(0, 255),
         price: body.price,
         quantity: body.quantity || 1,
       })

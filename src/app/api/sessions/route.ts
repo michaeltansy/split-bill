@@ -1,17 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase';
-import type { CreateSessionRequest, OCRItem } from '@/types';
-
-interface CreateSessionWithItems extends CreateSessionRequest {
-  items?: OCRItem[];
-}
+import type { CreateSessionRequest } from '@/types';
 
 export async function POST(request: NextRequest) {
   try {
     const supabase = createServerClient();
-    const body: CreateSessionWithItems = await request.json();
+    const body: CreateSessionRequest = await request.json();
 
-    // Create the session
     const { data: session, error: sessionError } = await supabase
       .from('sessions')
       .insert({
@@ -31,25 +26,6 @@ export async function POST(request: NextRequest) {
         { error: sessionError.message, code: 'INVALID_INPUT' },
         { status: 400 }
       );
-    }
-
-    // If items were provided from OCR, create them
-    if (body.items && body.items.length > 0) {
-      const itemsToInsert = body.items.map((item) => ({
-        session_id: session.id,
-        name: item.name,
-        price: item.price,
-        quantity: item.quantity || 1,
-      }));
-
-      const { error: itemsError } = await supabase
-        .from('items')
-        .insert(itemsToInsert);
-
-      if (itemsError) {
-        console.error('Failed to create items:', itemsError);
-        // Continue anyway - session was created successfully
-      }
     }
 
     return NextResponse.json(session, { status: 201 });

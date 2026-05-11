@@ -5,54 +5,66 @@ import type { Participant } from '@/types';
 
 interface ParticipantManagerProps {
   participants: Participant[];
-  onAdd: (name: string) => Promise<void>;
+  onCommit: (names: string[]) => Promise<void>;
   onRemove: (id: string) => Promise<void>;
   disabled?: boolean;
 }
 
 export function ParticipantManager({
   participants,
-  onAdd,
+  onCommit,
   onRemove,
   disabled = false,
 }: ParticipantManagerProps) {
   const [name, setName] = useState('');
+  const [pending, setPending] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [isAdding, setIsAdding] = useState(false);
+  const [isCommitting, setIsCommitting] = useState(false);
   const [removingId, setRemovingId] = useState<string | null>(null);
 
-  const handleSubmit = useCallback(
-    async (e: React.FormEvent) => {
+  const handleStage = useCallback(
+    (e: React.FormEvent) => {
       e.preventDefault();
       setError(null);
 
-      const trimmedName = name.trim();
-      if (!trimmedName) {
+      const trimmed = name.trim();
+      if (!trimmed) {
         setError('Name is required');
         return;
       }
 
-      // Check for duplicate names
-      const isDuplicate = participants.some(
-        (p) => p.name.toLowerCase() === trimmedName.toLowerCase()
-      );
-      if (isDuplicate) {
+      const lower = trimmed.toLowerCase();
+      const dupCommitted = participants.some((p) => p.name.toLowerCase() === lower);
+      const dupPending = pending.some((n) => n.toLowerCase() === lower);
+
+      if (dupCommitted || dupPending) {
         setError('A participant with this name already exists');
         return;
       }
 
-      setIsAdding(true);
-      try {
-        await onAdd(trimmedName);
-        setName('');
-      } catch (err) {
-        setError('Failed to add participant');
-      } finally {
-        setIsAdding(false);
-      }
+      setPending((prev) => [...prev, trimmed]);
+      setName('');
     },
-    [name, participants, onAdd]
+    [name, participants, pending]
   );
+
+  const handleUnstage = useCallback((idx: number) => {
+    setPending((prev) => prev.filter((_, i) => i !== idx));
+  }, []);
+
+  const handleCommit = useCallback(async () => {
+    if (pending.length === 0) return;
+    setIsCommitting(true);
+    setError(null);
+    try {
+      await onCommit(pending);
+      setPending([]);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to add participants');
+    } finally {
+      setIsCommitting(false);
+    }
+  }, [pending, onCommit]);
 
   const handleRemove = useCallback(
     async (id: string) => {
@@ -68,9 +80,11 @@ export function ParticipantManager({
     [onRemove]
   );
 
+  const isBusy = disabled || isCommitting;
+
   return (
     <div className="space-y-4">
-      <form onSubmit={handleSubmit} className="flex gap-2">
+      <form onSubmit={handleStage} className="flex gap-2">
         <input
           type="text"
           value={name}
@@ -79,52 +93,94 @@ export function ParticipantManager({
             setError(null);
           }}
           placeholder="Enter name"
-          disabled={disabled || isAdding}
+          disabled={isBusy}
           className="flex-1 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
         />
         <button
           type="submit"
-          disabled={disabled || isAdding || !name.trim()}
+          disabled={isBusy || !name.trim()}
           className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {isAdding ? 'Adding...' : 'Add'}
+          Add
         </button>
       </form>
 
-      {error && (
-        <p className="text-sm text-red-600">{error}</p>
-      )}
+      {error && <p className="text-sm text-red-600">{error}</p>}
 
-      {participants.length === 0 ? (
-        <p className="text-gray-500 text-sm py-4 text-center">
-          No participants yet. Add someone to get started.
-        </p>
-      ) : (
-        <ul className="space-y-2">
-          {participants.map((participant) => (
-            <li
-              key={participant.id}
-              className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
-            >
-              <span className="font-medium">{participant.name}</span>
-              <button
-                onClick={() => handleRemove(participant.id)}
-                disabled={disabled || removingId === participant.id}
-                className="text-red-600 hover:text-red-700 disabled:opacity-50 p-1"
-                title="Remove participant"
+      {pending.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+            Pending ({pending.length})
+          </p>
+          <ul className="space-y-2">
+            {pending.map((n, i) => (
+              <li
+                key={`${n}-${i}`}
+                className="flex items-center justify-between p-3 bg-yellow-50 border border-yellow-200 rounded-lg"
               >
-                {removingId === participant.id ? (
-                  <span className="text-sm">...</span>
-                ) : (
+                <span className="font-medium">{n}</span>
+                <button
+                  onClick={() => handleUnstage(i)}
+                  disabled={isBusy}
+                  className="text-gray-500 hover:text-red-600 disabled:opacity-50 p-1"
+                  title="Remove from pending"
+                  aria-label={`Remove ${n} from pending`}
+                >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
-                )}
-              </button>
-            </li>
-          ))}
-        </ul>
+                </button>
+              </li>
+            ))}
+          </ul>
+          <button
+            onClick={handleCommit}
+            disabled={isBusy}
+            className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isCommitting ? 'Updating…' : `Update (${pending.length})`}
+          </button>
+        </div>
       )}
+
+      {participants.length === 0 && pending.length === 0 ? (
+        <p className="text-gray-500 text-sm py-4 text-center">
+          No participants yet. Add someone to get started.
+        </p>
+      ) : participants.length > 0 ? (
+        <div className="space-y-2">
+          {pending.length > 0 && (
+            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+              Confirmed ({participants.length})
+            </p>
+          )}
+          <ul className="space-y-2">
+            {participants.map((participant) => (
+              <li
+                key={participant.id}
+                className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+              >
+                <span className="font-medium">{participant.name}</span>
+                <button
+                  onClick={() => handleRemove(participant.id)}
+                  disabled={isBusy || removingId === participant.id}
+                  className="text-red-600 hover:text-red-700 disabled:opacity-50 p-1"
+                  title="Remove participant"
+                  aria-label={`Remove ${participant.name}`}
+                >
+                  {removingId === participant.id ? (
+                    <span className="text-sm">...</span>
+                  ) : (
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  )}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
     </div>
   );
 }

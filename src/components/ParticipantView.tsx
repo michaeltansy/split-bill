@@ -69,17 +69,17 @@ export function ParticipantView({
     if (!bill) return;
 
     const itemLines = bill.items
-      .map((pItem) => `  ${pItem.item.name}: $${pItem.share_amount.toFixed(2)}`)
+      .map((pItem) => `  ${pItem.item.name}: IDR ${pItem.share_amount.toFixed(0)}`)
       .join('\n');
 
     const text = `My Bill - ${participant.name}
 ${itemLines}
   ─────────────
-  Subtotal: $${bill.subtotal.toFixed(2)}
-  Tax: $${bill.tax_share.toFixed(2)}
-  Service: $${bill.service_share.toFixed(2)}
+  Subtotal: IDR ${bill.subtotal.toFixed(0)}
+  Tax: IDR ${bill.tax_share.toFixed(0)}
+  Service: IDR ${bill.service_share.toFixed(0)}
   ─────────────
-  Total: $${bill.total.toFixed(2)}`;
+  Total: IDR ${bill.total.toFixed(0)}`;
 
     try {
       await navigator.clipboard.writeText(text);
@@ -137,7 +137,7 @@ ${itemLines}
                     </span>
                   )}
                 </span>
-                <span>${pItem.share_amount.toFixed(2)}</span>
+                <span>IDR {pItem.share_amount.toFixed(0)}</span>
               </div>
             ))}
           </div>
@@ -145,19 +145,19 @@ ${itemLines}
           <div className="border-t mt-3 pt-3 space-y-1 text-sm">
             <div className="flex justify-between text-gray-500">
               <span>Subtotal</span>
-              <span>${bill.subtotal.toFixed(2)}</span>
+              <span>IDR {bill.subtotal.toFixed(0)}</span>
             </div>
             <div className="flex justify-between text-gray-500">
               <span>Tax</span>
-              <span>${bill.tax_share.toFixed(2)}</span>
+              <span>IDR {bill.tax_share.toFixed(0)}</span>
             </div>
             <div className="flex justify-between text-gray-500">
               <span>Service</span>
-              <span>${bill.service_share.toFixed(2)}</span>
+              <span>IDR {bill.service_share.toFixed(0)}</span>
             </div>
             <div className="flex justify-between font-bold text-lg pt-2 border-t">
               <span>Total</span>
-              <span>${bill.total.toFixed(2)}</span>
+              <span>IDR {bill.total.toFixed(0)}</span>
             </div>
           </div>
         </section>
@@ -176,7 +176,7 @@ ${itemLines}
                 <div>
                   <p className="font-medium">{item.name}</p>
                   <p className="text-sm text-gray-500">
-                    ${(item.price * item.quantity).toFixed(2)}
+                    IDR {(item.price * item.quantity).toFixed(0)}
                   </p>
                 </div>
                 <button
@@ -206,7 +206,7 @@ ${itemLines}
                   <div>
                     <p className="font-medium">{item.name}</p>
                     <p className="text-sm text-gray-500">
-                      ${(item.price * item.quantity).toFixed(2)} total
+                      IDR {(item.price * item.quantity).toFixed(0)} total
                     </p>
                     <p className="text-xs text-gray-400">
                       Shared with: {getItemSharedWith(item)}
@@ -217,7 +217,7 @@ ${itemLines}
                       My share: {getMyPercentage(item).toFixed(0)}%
                     </p>
                     <p className="text-sm text-gray-600">
-                      ${((item.price * item.quantity * getMyPercentage(item)) / 100).toFixed(2)}
+                      IDR {((item.price * item.quantity * getMyPercentage(item)) / 100).toFixed(0)}
                     </p>
                   </div>
                 </div>
@@ -252,7 +252,7 @@ ${itemLines}
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="font-medium">
-                    ${(item.price * item.quantity).toFixed(2)}
+                    IDR {(item.price * item.quantity).toFixed(0)}
                   </span>
                   {claimingId === item.id ? (
                     <span className="text-gray-400">...</span>
@@ -284,19 +284,19 @@ ${itemLines}
         <div className="space-y-2 text-sm">
           <div className="flex justify-between">
             <span className="text-gray-500">Subtotal</span>
-            <span>${session.subtotal.toFixed(2)}</span>
+            <span>IDR {session.subtotal.toFixed(0)}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-gray-500">Tax ({session.tax_percentage}%)</span>
-            <span>${session.tax_amount.toFixed(2)}</span>
+            <span>IDR {session.tax_amount.toFixed(0)}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-gray-500">Service ({session.service_percentage}%)</span>
-            <span>${session.service_amount.toFixed(2)}</span>
+            <span>IDR {session.service_amount.toFixed(0)}</span>
           </div>
           <div className="flex justify-between font-bold pt-2 border-t">
             <span>Grand Total</span>
-            <span>${session.grand_total.toFixed(2)}</span>
+            <span>IDR {session.grand_total.toFixed(0)}</span>
           </div>
         </div>
       </section>

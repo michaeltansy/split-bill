@@ -8,7 +8,43 @@ export async function POST(
   try {
     const { id: sessionId } = await params;
     const supabase = createServerClient();
-    const { name } = await request.json();
+    const body = await request.json();
+
+    // Bulk path: { names: string[] }
+    if (Array.isArray(body.names)) {
+      const cleanNames: string[] = (body.names as unknown[])
+        .filter((n): n is string => typeof n === 'string')
+        .map((n) => n.trim())
+        .filter((n) => n.length > 0);
+
+      if (cleanNames.length === 0) {
+        return NextResponse.json(
+          { error: 'No valid names provided', code: 'INVALID_INPUT' },
+          { status: 400 }
+        );
+      }
+
+      const rows = cleanNames.map((name: string) => ({ session_id: sessionId, name }));
+      const { data, error } = await supabase.from('participants').insert(rows).select();
+
+      if (error) {
+        if (error.code === '23505') {
+          return NextResponse.json(
+            { error: 'One or more participants already exist', code: 'PARTICIPANT_EXISTS' },
+            { status: 409 }
+          );
+        }
+        return NextResponse.json(
+          { error: error.message, code: 'INVALID_INPUT' },
+          { status: 400 }
+        );
+      }
+
+      return NextResponse.json(data, { status: 201 });
+    }
+
+    // Single path: { name: string }
+    const { name } = body;
 
     if (!name || typeof name !== 'string' || name.trim().length === 0) {
       return NextResponse.json(

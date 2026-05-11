@@ -49,25 +49,6 @@ export interface SessionFull {
   items: ItemWithAssignments[];
 }
 
-// OCR Types
-export interface OCRResult {
-  items: OCRItem[];
-  subtotal: number | null;
-  tax_amount: number | null;
-  service_amount: number | null;
-  grand_total: number | null;
-  tax_percentage: number | null;
-  service_percentage: number | null;
-  raw_text: string;
-  confidence: number;
-}
-
-export interface OCRItem {
-  name: string;
-  price: number;
-  quantity: number;
-}
-
 // Bill Calculation Types
 export interface ParticipantBill {
   participant: Participant;
@@ -116,6 +97,5 @@ export type APIErrorCode =
   | 'SESSION_NOT_FOUND'
   | 'SESSION_EXPIRED'
   | 'INVALID_INPUT'
-  | 'OCR_FAILED'
   | 'PARTICIPANT_EXISTS'
   | 'INVALID_PERCENTAGE';

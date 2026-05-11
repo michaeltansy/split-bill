@@ -22,17 +22,17 @@ export function BillSummary({
   const handleCopyBill = async (bill: ParticipantBill) => {
     const itemDetails = bill.items
       .map((pItem) => {
-        return `  - ${pItem.item.name}: $${pItem.share_amount.toFixed(2)}`;
+        return `  - ${pItem.item.name}: IDR ${pItem.share_amount.toFixed(0)}`;
       })
       .join('\n');
 
     const text = `${bill.participant.name}'s Bill:
 ${itemDetails}
-  Subtotal: $${bill.subtotal.toFixed(2)}
-  Tax: $${bill.tax_share.toFixed(2)}
-  Service: $${bill.service_share.toFixed(2)}
+  Subtotal: IDR ${bill.subtotal.toFixed(0)}
+  Tax: IDR ${bill.tax_share.toFixed(0)}
+  Service: IDR ${bill.service_share.toFixed(0)}
   ─────────────
-  Total: $${bill.total.toFixed(2)}`;
+  Total: IDR ${bill.total.toFixed(0)}`;
 
     try {
       await navigator.clipboard.writeText(text);
@@ -58,12 +58,12 @@ ${itemDetails}
       <div className="bg-gray-50 rounded-lg p-4">
         <div className="flex justify-between items-center">
           <span className="font-medium">Grand Total</span>
-          <span className="text-xl font-bold">${grandTotal.toFixed(2)}</span>
+          <span className="text-xl font-bold">IDR {grandTotal.toFixed(0)}</span>
         </div>
         <div className="flex justify-between text-sm mt-2">
-          <span className="text-green-600">Assigned: ${totalAssigned.toFixed(2)}</span>
+          <span className="text-green-600">Assigned: IDR {totalAssigned.toFixed(0)}</span>
           {totalUnassigned > 0 && (
-            <span className="text-orange-600">Unassigned: ${totalUnassigned.toFixed(2)}</span>
+            <span className="text-orange-600">Unassigned: IDR {totalUnassigned.toFixed(0)}</span>
           )}
         </div>
         {totalUnassigned > 0 && (
@@ -96,7 +96,7 @@ ${itemDetails}
                   <span className="font-medium">{bill.participant.name}</span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className="text-lg font-semibold">${bill.total.toFixed(2)}</span>
+                  <span className="text-lg font-semibold">IDR {bill.total.toFixed(0)}</span>
                   <svg
                     className={`w-5 h-5 text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
                     fill="none"
@@ -125,7 +125,7 @@ ${itemDetails}
                               </span>
                             )}
                           </span>
-                          <span>${pItem.share_amount.toFixed(2)}</span>
+                          <span>IDR {pItem.share_amount.toFixed(0)}</span>
                         </div>
                       );
                     })}
@@ -135,19 +135,19 @@ ${itemDetails}
                   <div className="border-t pt-2 space-y-1">
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-500">Items Subtotal</span>
-                      <span>${bill.subtotal.toFixed(2)}</span>
+                      <span>IDR {bill.subtotal.toFixed(0)}</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-500">Tax</span>
-                      <span>${bill.tax_share.toFixed(2)}</span>
+                      <span>IDR {bill.tax_share.toFixed(0)}</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-500">Service</span>
-                      <span>${bill.service_share.toFixed(2)}</span>
+                      <span>IDR {bill.service_share.toFixed(0)}</span>
                     </div>
                     <div className="flex justify-between font-medium pt-1 border-t">
                       <span>Total</span>
-                      <span>${bill.total.toFixed(2)}</span>
+                      <span>IDR {bill.total.toFixed(0)}</span>
                     </div>
                   </div>
 

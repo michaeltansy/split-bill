@@ -77,15 +77,15 @@ export function TaxServiceInput({
             Subtotal
           </label>
           <div className="relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-xs">IDR</span>
             <input
               type="number"
-              step="0.01"
+              step="1"
               min="0"
               value={subtotal}
               onChange={(e) => handleChange('subtotal', e.target.value)}
               disabled={disabled || isSaving}
-              className="w-full pl-7 pr-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+              className="w-full pl-11 pr-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
             />
           </div>
         </div>
@@ -98,15 +98,15 @@ export function TaxServiceInput({
             </span>
           </label>
           <div className="relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-xs">IDR</span>
             <input
               type="number"
-              step="0.01"
+              step="1"
               min="0"
               value={taxAmount}
               onChange={(e) => handleChange('tax', e.target.value)}
               disabled={disabled || isSaving}
-              className="w-full pl-7 pr-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+              className="w-full pl-11 pr-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
             />
           </div>
         </div>
@@ -119,15 +119,15 @@ export function TaxServiceInput({
             </span>
           </label>
           <div className="relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-xs">IDR</span>
             <input
               type="number"
-              step="0.01"
+              step="1"
               min="0"
               value={serviceAmount}
               onChange={(e) => handleChange('service', e.target.value)}
               disabled={disabled || isSaving}
-              className="w-full pl-7 pr-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+              className="w-full pl-11 pr-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
             />
           </div>
         </div>
@@ -137,7 +137,7 @@ export function TaxServiceInput({
             Grand Total
           </label>
           <div className="px-3 py-2 bg-gray-100 border rounded-lg font-semibold">
-            ${grandTotal.toFixed(2)}
+            IDR {grandTotal.toFixed(0)}
           </div>
         </div>
       </div>
