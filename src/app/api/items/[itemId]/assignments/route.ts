@@ -29,6 +29,21 @@ export async function PUT(
       }
     }
 
+    // Resolve session_id from the item so we can stamp it on each assignment
+    // (required for realtime filtering by session).
+    const { data: item, error: itemError } = await supabase
+      .from('items')
+      .select('session_id')
+      .eq('id', itemId)
+      .single();
+
+    if (itemError || !item) {
+      return NextResponse.json(
+        { error: 'Item not found', code: 'ITEM_NOT_FOUND' },
+        { status: 404 }
+      );
+    }
+
     // Delete existing assignments
     await supabase.from('item_assignments').delete().eq('item_id', itemId);
 
@@ -37,6 +52,7 @@ export async function PUT(
       const { error } = await supabase.from('item_assignments').insert(
         body.assignments.map((a) => ({
           item_id: itemId,
+          session_id: item.session_id,
           participant_id: a.participant_id,
           split_type: a.split_type,
           percentage: a.percentage || null,

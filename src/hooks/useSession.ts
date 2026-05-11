@@ -89,7 +89,7 @@ export function useSession(sessionId: string): UseSessionReturn {
       )
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'item_assignments' },
+        { event: '*', schema: 'public', table: 'item_assignments', filter: `session_id=eq.${sessionId}` },
         () => { fetchSession(); }
       )
       .subscribe();

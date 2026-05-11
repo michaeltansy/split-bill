@@ -32,6 +32,7 @@ export interface Item {
 export interface ItemAssignment {
   id: string;
   item_id: string;
+  session_id: string;
   participant_id: string;
   split_type: 'equal' | 'percentage';
   percentage: number | null;

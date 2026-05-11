@@ -68,7 +68,7 @@ ${itemDetails}
         </div>
         {totalUnassigned > 0 && (
           <p className="text-xs text-orange-600 mt-2">
-            Some items haven't been assigned to participants yet.
+            Some items haven&apos;t been assigned to participants yet.
           </p>
         )}
       </div>

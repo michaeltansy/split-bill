@@ -1,6 +1,7 @@
 'use client';
 
 import { use, useCallback, useMemo, useState } from 'react';
+import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useSession } from '@/hooks/useSession';
 import { useBillCalculation } from '@/hooks/useBillCalculation';
@@ -20,7 +21,7 @@ export default function SessionPage({
 }) {
   const { id } = use(params);
   const searchParams = useSearchParams();
-  const participantName = searchParams.get('participant');
+  const participantName = searchParams?.get('participant') ?? null;
 
   const {
     session,
@@ -199,12 +200,12 @@ export default function SessionPage({
         <p className="text-gray-600 mb-4">
           This session may have expired or the link is incorrect.
         </p>
-        <a
+        <Link
           href="/"
           className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
         >
           Go to Home Page
-        </a>
+        </Link>
       </main>
     );
   }

@@ -1,0 +1,19 @@
+# Planning docs (not needed at runtime)
+.planning/
+plan.md
+tech_plan.md
+task_breakdown.md
+future_plan.md
+
+# Supabase project (deployed separately via supabase CLI)
+supabase/
+
+# Test infrastructure (not needed at runtime)
+src/test/
+**/*.test.ts
+**/*.test.tsx
+vitest.config.ts
+
+# Local dev artifacts
+.next/cache/
+*.tsbuildinfo
