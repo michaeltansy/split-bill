@@ -4,6 +4,7 @@ import { useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/components/Toast';
 import { useBillScan } from '@/hooks/useBillScan';
+import { formatIDR } from '@/lib/format';
 
 const OCR_ENABLED = process.env.NEXT_PUBLIC_OCR_ENABLED === 'true';
 
@@ -16,10 +17,6 @@ type DraftItem = {
 
 function newDraftItem(): DraftItem {
   return { id: crypto.randomUUID(), name: '', price: '', quantity: '1' };
-}
-
-function formatIDR(value: number): string {
-  return `IDR ${value.toLocaleString('id-ID', { maximumFractionDigits: 0 })}`;
 }
 
 export default function Home() {

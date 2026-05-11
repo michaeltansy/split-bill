@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import type { Session } from '@/types';
+import { formatIDR } from '@/lib/format';
 
 interface TaxServiceInputProps {
   session: Session;
@@ -137,7 +138,7 @@ export function TaxServiceInput({
             Grand Total
           </label>
           <div className="px-3 py-2 bg-gray-100 border rounded-lg font-semibold">
-            IDR {grandTotal.toFixed(0)}
+            {formatIDR(grandTotal)}
           </div>
         </div>
       </div>

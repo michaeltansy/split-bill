@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import type { Item, Participant, ItemAssignment } from '@/types';
-import { ItemCard } from './ItemCard';
+import { ItemCard, type AssignmentPayload } from './ItemCard';
 
 interface ItemListProps {
   items: Item[];
@@ -11,7 +11,7 @@ interface ItemListProps {
   onAdd: (data: { name: string; price: number; quantity: number }) => Promise<void>;
   onUpdate: (id: string, data: { name?: string; price?: number; quantity?: number }) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
-  onAssign: (itemId: string, assignments: { participant_id: string; share_percentage: number }[]) => Promise<void>;
+  onAssign: (itemId: string, assignments: AssignmentPayload[]) => Promise<void>;
   disabled?: boolean;
 }
 

@@ -37,6 +37,13 @@ export function calculateParticipantBills(
       if (assignment.split_type === 'percentage' && assignment.percentage !== null) {
         sharePercentage = assignment.percentage;
         shareAmount = (totalItemPrice * sharePercentage) / 100;
+      } else if (
+        assignment.split_type === 'unit' &&
+        assignment.unit_count !== null &&
+        item.quantity > 0
+      ) {
+        sharePercentage = (assignment.unit_count / item.quantity) * 100;
+        shareAmount = assignment.unit_count * item.price;
       } else {
         sharePercentage = 100 / assignedParticipants.length;
         shareAmount = totalItemPrice / assignedParticipants.length;
@@ -54,6 +61,7 @@ export function calculateParticipantBills(
         share_amount: shareAmount,
         share_percentage: sharePercentage,
         split_type: assignment.split_type,
+        unit_count: assignment.unit_count,
         shared_with: sharedWith,
       });
 

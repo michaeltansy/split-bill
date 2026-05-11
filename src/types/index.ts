@@ -29,13 +29,16 @@ export interface Item {
   created_at: string;
 }
 
+export type SplitType = 'equal' | 'percentage' | 'unit';
+
 export interface ItemAssignment {
   id: string;
   item_id: string;
   session_id: string;
   participant_id: string;
-  split_type: 'equal' | 'percentage';
+  split_type: SplitType;
   percentage: number | null;
+  unit_count: number | null;
   created_at: string;
 }
 
@@ -64,7 +67,8 @@ export interface ParticipantItem {
   item: Item;
   share_amount: number;
   share_percentage: number;
-  split_type: 'equal' | 'percentage';
+  split_type: SplitType;
+  unit_count: number | null;
   shared_with: string[];
 }
 
@@ -82,8 +86,9 @@ export interface CreateSessionRequest {
 export interface UpdateAssignmentsRequest {
   assignments: Array<{
     participant_id: string;
-    split_type: 'equal' | 'percentage';
+    split_type: SplitType;
     percentage?: number;
+    unit_count?: number;
   }>;
 }
 

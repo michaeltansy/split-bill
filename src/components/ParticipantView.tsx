@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useMemo } from 'react';
 import type { Session, Participant, ItemWithAssignments, ParticipantBill } from '@/types';
+import { formatIDR, formatNumber } from '@/lib/format';
 
 interface ParticipantViewProps {
   session: Session;
@@ -69,17 +70,17 @@ export function ParticipantView({
     if (!bill) return;
 
     const itemLines = bill.items
-      .map((pItem) => `  ${pItem.item.name}: IDR ${pItem.share_amount.toFixed(0)}`)
+      .map((pItem) => `  ${pItem.item.name}: ${formatIDR(pItem.share_amount)}`)
       .join('\n');
 
     const text = `My Bill - ${participant.name}
 ${itemLines}
   ─────────────
-  Subtotal: IDR ${bill.subtotal.toFixed(0)}
-  Tax: IDR ${bill.tax_share.toFixed(0)}
-  Service: IDR ${bill.service_share.toFixed(0)}
+  Subtotal: ${formatIDR(bill.subtotal)}
+  Tax: ${formatIDR(bill.tax_share)}
+  Service: ${formatIDR(bill.service_share)}
   ─────────────
-  Total: IDR ${bill.total.toFixed(0)}`;
+  Total: ${formatIDR(bill.total)}`;
 
     try {
       await navigator.clipboard.writeText(text);
@@ -128,36 +129,36 @@ ${itemLines}
 
           <div className="space-y-2 text-sm">
             {bill.items.map((pItem) => (
-              <div key={pItem.item.id} className="flex justify-between">
-                <span className="text-gray-600">
+              <div key={pItem.item.id} className="flex justify-between gap-2">
+                <span className="text-gray-600 truncate min-w-0">
                   {pItem.item.name}
                   {pItem.share_percentage < 100 && (
                     <span className="text-gray-400 ml-1">
-                      ({pItem.share_percentage.toFixed(0)}%)
+                      ({formatNumber(pItem.share_percentage)}%)
                     </span>
                   )}
                 </span>
-                <span>IDR {pItem.share_amount.toFixed(0)}</span>
+                <span className="shrink-0">{formatIDR(pItem.share_amount)}</span>
               </div>
             ))}
           </div>
 
           <div className="border-t mt-3 pt-3 space-y-1 text-sm">
-            <div className="flex justify-between text-gray-500">
+            <div className="flex justify-between text-gray-500 gap-2">
               <span>Subtotal</span>
-              <span>IDR {bill.subtotal.toFixed(0)}</span>
+              <span className="shrink-0">{formatIDR(bill.subtotal)}</span>
             </div>
-            <div className="flex justify-between text-gray-500">
+            <div className="flex justify-between text-gray-500 gap-2">
               <span>Tax</span>
-              <span>IDR {bill.tax_share.toFixed(0)}</span>
+              <span className="shrink-0">{formatIDR(bill.tax_share)}</span>
             </div>
-            <div className="flex justify-between text-gray-500">
+            <div className="flex justify-between text-gray-500 gap-2">
               <span>Service</span>
-              <span>IDR {bill.service_share.toFixed(0)}</span>
+              <span className="shrink-0">{formatIDR(bill.service_share)}</span>
             </div>
-            <div className="flex justify-between font-bold text-lg pt-2 border-t">
+            <div className="flex justify-between font-bold text-base sm:text-lg pt-2 border-t gap-2">
               <span>Total</span>
-              <span>IDR {bill.total.toFixed(0)}</span>
+              <span className="shrink-0">{formatIDR(bill.total)}</span>
             </div>
           </div>
         </section>
@@ -171,18 +172,18 @@ ${itemLines}
             {myItems.map((item) => (
               <div
                 key={item.id}
-                className="flex items-center justify-between p-3 bg-green-50 rounded-lg"
+                className="flex items-center justify-between p-3 bg-green-50 rounded-lg gap-3"
               >
-                <div>
-                  <p className="font-medium">{item.name}</p>
+                <div className="min-w-0 flex-1">
+                  <p className="font-medium truncate">{item.name}</p>
                   <p className="text-sm text-gray-500">
-                    IDR {(item.price * item.quantity).toFixed(0)}
+                    {formatIDR(item.price * item.quantity)}
                   </p>
                 </div>
                 <button
                   onClick={() => handleClaim(item.id, false)}
                   disabled={claimingId === item.id}
-                  className="text-sm text-red-600 hover:text-red-700 disabled:opacity-50"
+                  className="text-sm text-red-600 hover:text-red-700 disabled:opacity-50 shrink-0"
                 >
                   {claimingId === item.id ? '...' : 'Remove'}
                 </button>
@@ -202,22 +203,22 @@ ${itemLines}
                 key={item.id}
                 className="p-3 bg-yellow-50 rounded-lg"
               >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium">{item.name}</p>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium truncate">{item.name}</p>
                     <p className="text-sm text-gray-500">
-                      IDR {(item.price * item.quantity).toFixed(0)} total
+                      {formatIDR(item.price * item.quantity)} total
                     </p>
-                    <p className="text-xs text-gray-400">
+                    <p className="text-xs text-gray-400 break-words">
                       Shared with: {getItemSharedWith(item)}
                     </p>
                   </div>
-                  <div className="text-right">
+                  <div className="text-right shrink-0">
                     <p className="text-sm font-medium">
-                      My share: {getMyPercentage(item).toFixed(0)}%
+                      My share: {formatNumber(getMyPercentage(item))}%
                     </p>
                     <p className="text-sm text-gray-600">
-                      IDR {((item.price * item.quantity * getMyPercentage(item)) / 100).toFixed(0)}
+                      {formatIDR((item.price * item.quantity * getMyPercentage(item)) / 100)}
                     </p>
                   </div>
                 </div>
@@ -242,17 +243,17 @@ ${itemLines}
                 key={item.id}
                 onClick={() => handleClaim(item.id, true)}
                 disabled={claimingId === item.id}
-                className="w-full flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 disabled:opacity-50 text-left"
+                className="w-full flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 disabled:opacity-50 text-left gap-3"
               >
-                <div>
-                  <p className="font-medium">{item.name}</p>
+                <div className="min-w-0 flex-1">
+                  <p className="font-medium truncate">{item.name}</p>
                   {item.quantity > 1 && (
                     <p className="text-xs text-gray-400">Qty: {item.quantity}</p>
                   )}
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 shrink-0">
                   <span className="font-medium">
-                    IDR {(item.price * item.quantity).toFixed(0)}
+                    {formatIDR(item.price * item.quantity)}
                   </span>
                   {claimingId === item.id ? (
                     <span className="text-gray-400">...</span>
@@ -282,21 +283,21 @@ ${itemLines}
       <section className="bg-white rounded-lg shadow-sm p-6">
         <h2 className="text-lg font-semibold mb-4">Receipt Summary</h2>
         <div className="space-y-2 text-sm">
-          <div className="flex justify-between">
+          <div className="flex justify-between gap-2">
             <span className="text-gray-500">Subtotal</span>
-            <span>IDR {session.subtotal.toFixed(0)}</span>
+            <span className="shrink-0">{formatIDR(session.subtotal)}</span>
           </div>
-          <div className="flex justify-between">
-            <span className="text-gray-500">Tax ({session.tax_percentage}%)</span>
-            <span>IDR {session.tax_amount.toFixed(0)}</span>
+          <div className="flex justify-between gap-2">
+            <span className="text-gray-500">Tax ({formatNumber(session.tax_percentage)}%)</span>
+            <span className="shrink-0">{formatIDR(session.tax_amount)}</span>
           </div>
-          <div className="flex justify-between">
-            <span className="text-gray-500">Service ({session.service_percentage}%)</span>
-            <span>IDR {session.service_amount.toFixed(0)}</span>
+          <div className="flex justify-between gap-2">
+            <span className="text-gray-500">Service ({formatNumber(session.service_percentage)}%)</span>
+            <span className="shrink-0">{formatIDR(session.service_amount)}</span>
           </div>
-          <div className="flex justify-between font-bold pt-2 border-t">
+          <div className="flex justify-between font-bold pt-2 border-t gap-2">
             <span>Grand Total</span>
-            <span>IDR {session.grand_total.toFixed(0)}</span>
+            <span className="shrink-0">{formatIDR(session.grand_total)}</span>
           </div>
         </div>
       </section>

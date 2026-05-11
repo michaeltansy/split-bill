@@ -13,6 +13,7 @@ import { BillSummary } from '@/components/BillSummary';
 import { ParticipantView } from '@/components/ParticipantView';
 import { ShareModal } from '@/components/ShareModal';
 import type { Session, ItemAssignment } from '@/types';
+import type { AssignmentPayload } from '@/components/ItemCard';
 
 export default function SessionPage({
   params,
@@ -100,14 +101,8 @@ export default function SessionPage({
   );
 
   const handleAssignItem = useCallback(
-    async (itemId: string, assignments: { participant_id: string; share_percentage: number }[]) => {
-      await updateAssignments(itemId, {
-        assignments: assignments.map((a) => ({
-          participant_id: a.participant_id,
-          split_type: assignments.length > 1 ? 'percentage' : 'equal',
-          percentage: a.share_percentage,
-        })),
-      });
+    async (itemId: string, assignments: AssignmentPayload[]) => {
+      await updateAssignments(itemId, { assignments });
     },
     [updateAssignments]
   );

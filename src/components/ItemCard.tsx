@@ -1,7 +1,15 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import type { Item, Participant, ItemAssignment } from '@/types';
+import type { Item, Participant, ItemAssignment, SplitType } from '@/types';
+import { formatIDR } from '@/lib/format';
+
+export interface AssignmentPayload {
+  participant_id: string;
+  split_type: SplitType;
+  percentage?: number;
+  unit_count?: number;
+}
 
 interface ItemCardProps {
   item: Item;
@@ -9,7 +17,7 @@ interface ItemCardProps {
   assignments: ItemAssignment[];
   onUpdate: (id: string, data: { name?: string; price?: number; quantity?: number }) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
-  onAssign: (itemId: string, assignments: { participant_id: string; share_percentage: number }[]) => Promise<void>;
+  onAssign: (itemId: string, assignments: AssignmentPayload[]) => Promise<void>;
   disabled?: boolean;
 }
 
@@ -30,15 +38,25 @@ export function ItemCard({
   const [isDeleting, setIsDeleting] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  // Assignment state
+  // Assignment state — initialised from existing assignments so re-opening the dialog
+  // restores the previously chosen split type and values.
   const [selectedParticipants, setSelectedParticipants] = useState<Set<string>>(
     new Set(assignments.map((a) => a.participant_id))
   );
-  const [splitType, setSplitType] = useState<'equal' | 'percentage'>('equal');
+  const [splitType, setSplitType] = useState<SplitType>(
+    () => (assignments[0]?.split_type as SplitType | undefined) ?? 'equal'
+  );
   const [percentages, setPercentages] = useState<Record<string, number>>(() => {
     const result: Record<string, number> = {};
     assignments.forEach((a) => {
-      result[a.participant_id] = a.percentage || (100 / assignments.length);
+      result[a.participant_id] = a.percentage ?? (assignments.length > 0 ? 100 / assignments.length : 0);
+    });
+    return result;
+  });
+  const [unitCounts, setUnitCounts] = useState<Record<string, number>>(() => {
+    const result: Record<string, number> = {};
+    assignments.forEach((a) => {
+      if (a.unit_count != null) result[a.participant_id] = a.unit_count;
     });
     return result;
   });
@@ -81,8 +99,9 @@ export function ItemCard({
   }, [item.id, onDelete]);
 
   const handleToggleParticipant = (participantId: string) => {
+    const wasSelected = selectedParticipants.has(participantId);
     const newSelected = new Set(selectedParticipants);
-    if (newSelected.has(participantId)) {
+    if (wasSelected) {
       newSelected.delete(participantId);
     } else {
       newSelected.add(participantId);
@@ -98,13 +117,47 @@ export function ItemCard({
       });
       setPercentages(newPercentages);
     }
+
+    // Default unit counts when adding/removing in 'unit' mode
+    if (splitType === 'unit') {
+      const next = { ...unitCounts };
+      if (wasSelected) {
+        delete next[participantId];
+      } else {
+        const claimedByOthers = Array.from(newSelected)
+          .filter((id) => id !== participantId)
+          .reduce((sum, id) => sum + (next[id] || 0), 0);
+        const remaining = Math.max(0, item.quantity - claimedByOthers);
+        next[participantId] = remaining > 0 ? remaining : 1;
+      }
+      setUnitCounts(next);
+    }
   };
 
   const handleSaveAssignment = useCallback(async () => {
-    const assignmentData = Array.from(selectedParticipants).map((participantId) => ({
-      participant_id: participantId,
-      share_percentage: percentages[participantId] || (100 / selectedParticipants.size),
-    }));
+    const assignmentData: AssignmentPayload[] = Array.from(selectedParticipants).map(
+      (participantId) => {
+        if (splitType === 'percentage') {
+          return {
+            participant_id: participantId,
+            split_type: 'percentage',
+            percentage: percentages[participantId] || 100 / selectedParticipants.size,
+          };
+        }
+        if (splitType === 'unit') {
+          return {
+            participant_id: participantId,
+            split_type: 'unit',
+            unit_count: unitCounts[participantId] || 0,
+          };
+        }
+        return {
+          participant_id: participantId,
+          split_type: 'equal',
+          percentage: 100 / selectedParticipants.size,
+        };
+      }
+    );
 
     setIsSaving(true);
     try {
@@ -113,12 +166,17 @@ export function ItemCard({
     } finally {
       setIsSaving(false);
     }
-  }, [item.id, selectedParticipants, percentages, onAssign]);
+  }, [item.id, selectedParticipants, splitType, percentages, unitCounts, onAssign]);
 
   const totalPercentage = Array.from(selectedParticipants).reduce(
     (sum, id) => sum + (percentages[id] || 0),
     0
   );
+  const totalUnits = Array.from(selectedParticipants).reduce(
+    (sum, id) => sum + (unitCounts[id] || 0),
+    0
+  );
+  const unitsBalanced = totalUnits === item.quantity;
 
   if (isEditing) {
     return (
@@ -183,13 +241,13 @@ export function ItemCard({
   if (isAssigning) {
     return (
       <div className="border rounded-lg p-4 bg-green-50">
-        <div className="mb-3">
-          <span className="font-medium">{item.name}</span>
-          <span className="text-gray-500 ml-2">IDR {item.price.toFixed(0)}</span>
+        <div className="mb-3 flex items-baseline gap-2 min-w-0">
+          <span className="font-medium truncate min-w-0">{item.name}</span>
+          <span className="text-gray-500 shrink-0">{formatIDR(item.price)}</span>
         </div>
 
         <div className="mb-3">
-          <div className="flex gap-2 mb-2">
+          <div className="flex flex-wrap gap-2 mb-2">
             <button
               onClick={() => setSplitType('equal')}
               className={`px-3 py-1 text-sm rounded ${
@@ -206,7 +264,22 @@ export function ItemCard({
             >
               Custom %
             </button>
+            <button
+              onClick={() => setSplitType('unit')}
+              disabled={item.quantity < 2}
+              title={item.quantity < 2 ? 'Item has only 1 unit — use Equal or %' : undefined}
+              className={`px-3 py-1 text-sm rounded disabled:opacity-50 disabled:cursor-not-allowed ${
+                splitType === 'unit' ? 'bg-green-600 text-white' : 'bg-gray-200'
+              }`}
+            >
+              By Unit
+            </button>
           </div>
+          {splitType === 'unit' && (
+            <p className="text-xs text-gray-600">
+              Item has <span className="font-medium">{item.quantity}</span> units. Each person enters how many they took.
+            </p>
+          )}
         </div>
 
         <div className="space-y-2 mb-3">
@@ -219,21 +292,44 @@ export function ItemCard({
                 onChange={() => handleToggleParticipant(p.id)}
                 className="w-4 h-4"
               />
-              <label htmlFor={`assign-${item.id}-${p.id}`} className="flex-1">
+              <label htmlFor={`assign-${item.id}-${p.id}`} className="flex-1 min-w-0 truncate">
                 {p.name}
               </label>
               {splitType === 'percentage' && selectedParticipants.has(p.id) && (
-                <input
-                  type="number"
-                  min="0"
-                  max="100"
-                  value={percentages[p.id] || ''}
-                  onChange={(e) =>
-                    setPercentages({ ...percentages, [p.id]: parseFloat(e.target.value) || 0 })
-                  }
-                  className="w-16 px-2 py-1 border rounded text-sm"
-                  placeholder="%"
-                />
+                <div className="flex items-center gap-1 shrink-0">
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    value={percentages[p.id] || ''}
+                    onChange={(e) =>
+                      setPercentages({ ...percentages, [p.id]: parseFloat(e.target.value) || 0 })
+                    }
+                    className="w-16 px-2 py-1 border rounded text-sm"
+                    placeholder="%"
+                  />
+                  <span className="text-xs text-gray-500">%</span>
+                </div>
+              )}
+              {splitType === 'unit' && selectedParticipants.has(p.id) && (
+                <div className="flex items-center gap-1 shrink-0">
+                  <input
+                    type="number"
+                    min="1"
+                    max={item.quantity}
+                    step="1"
+                    value={unitCounts[p.id] ?? ''}
+                    onChange={(e) =>
+                      setUnitCounts({
+                        ...unitCounts,
+                        [p.id]: Math.max(0, parseInt(e.target.value, 10) || 0),
+                      })
+                    }
+                    className="w-16 px-2 py-1 border rounded text-sm"
+                    placeholder="qty"
+                  />
+                  <span className="text-xs text-gray-500">units</span>
+                </div>
               )}
             </div>
           ))}
@@ -246,13 +342,21 @@ export function ItemCard({
           </p>
         )}
 
+        {splitType === 'unit' && selectedParticipants.size > 0 && (
+          <p className={`text-sm mb-3 ${unitsBalanced ? 'text-green-600' : 'text-red-600'}`}>
+            Total: {totalUnits} of {item.quantity} unit{item.quantity === 1 ? '' : 's'}
+            {!unitsBalanced && ` (must equal ${item.quantity})`}
+          </p>
+        )}
+
         <div className="flex gap-2">
           <button
             onClick={handleSaveAssignment}
             disabled={
               isSaving ||
               selectedParticipants.size === 0 ||
-              (splitType === 'percentage' && Math.abs(totalPercentage - 100) >= 0.01)
+              (splitType === 'percentage' && Math.abs(totalPercentage - 100) >= 0.01) ||
+              (splitType === 'unit' && !unitsBalanced)
             }
             className="flex-1 px-3 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
           >
@@ -272,30 +376,30 @@ export function ItemCard({
 
   return (
     <div className="border rounded-lg p-4 hover:border-gray-400 transition-colors">
-      <div className="flex items-start justify-between">
-        <div className="flex-1">
-          <div className="flex items-center gap-2">
-            <span className="font-medium">{item.name}</span>
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="font-medium truncate min-w-0">{item.name}</span>
             {item.quantity > 1 && (
-              <span className="text-sm text-gray-500">x{item.quantity}</span>
+              <span className="text-sm text-gray-500 shrink-0">x{item.quantity}</span>
             )}
           </div>
-          <div className="text-lg font-semibold text-gray-800">
-            IDR {(item.price * item.quantity).toFixed(0)}
+          <div className="text-base sm:text-lg font-semibold text-gray-800 break-words">
+            {formatIDR(item.price * item.quantity)}
             {item.quantity > 1 && (
               <span className="text-sm font-normal text-gray-500 ml-1">
-                (IDR {item.price.toFixed(0)} each)
+                ({formatIDR(item.price)} each)
               </span>
             )}
           </div>
           {assignedNames ? (
-            <p className="text-sm text-green-600 mt-1">{assignedNames}</p>
+            <p className="text-sm text-green-600 mt-1 break-words">{assignedNames}</p>
           ) : (
             <p className="text-sm text-orange-500 mt-1">Not assigned</p>
           )}
         </div>
 
-        <div className="flex gap-1">
+        <div className="flex gap-1 shrink-0">
           <button
             onClick={() => setIsAssigning(true)}
             disabled={disabled || participants.length === 0}

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import type { ParticipantBill } from '@/types';
+import { formatIDR, formatNumber } from '@/lib/format';
 
 interface BillSummaryProps {
   bills: ParticipantBill[];
@@ -21,18 +22,16 @@ export function BillSummary({
 
   const handleCopyBill = async (bill: ParticipantBill) => {
     const itemDetails = bill.items
-      .map((pItem) => {
-        return `  - ${pItem.item.name}: IDR ${pItem.share_amount.toFixed(0)}`;
-      })
+      .map((pItem) => `  - ${pItem.item.name}: ${formatIDR(pItem.share_amount)}`)
       .join('\n');
 
     const text = `${bill.participant.name}'s Bill:
 ${itemDetails}
-  Subtotal: IDR ${bill.subtotal.toFixed(0)}
-  Tax: IDR ${bill.tax_share.toFixed(0)}
-  Service: IDR ${bill.service_share.toFixed(0)}
+  Subtotal: ${formatIDR(bill.subtotal)}
+  Tax: ${formatIDR(bill.tax_share)}
+  Service: ${formatIDR(bill.service_share)}
   ─────────────
-  Total: IDR ${bill.total.toFixed(0)}`;
+  Total: ${formatIDR(bill.total)}`;
 
     try {
       await navigator.clipboard.writeText(text);
@@ -56,14 +55,14 @@ ${itemDetails}
     <div className="space-y-4">
       {/* Summary header */}
       <div className="bg-gray-50 rounded-lg p-4">
-        <div className="flex justify-between items-center">
+        <div className="flex justify-between items-center gap-3">
           <span className="font-medium">Grand Total</span>
-          <span className="text-xl font-bold">IDR {grandTotal.toFixed(0)}</span>
+          <span className="text-lg sm:text-xl font-bold break-words text-right">{formatIDR(grandTotal)}</span>
         </div>
-        <div className="flex justify-between text-sm mt-2">
-          <span className="text-green-600">Assigned: IDR {totalAssigned.toFixed(0)}</span>
+        <div className="flex flex-wrap justify-between text-sm mt-2 gap-x-3 gap-y-1">
+          <span className="text-green-600">Assigned: {formatIDR(totalAssigned)}</span>
           {totalUnassigned > 0 && (
-            <span className="text-orange-600">Unassigned: IDR {totalUnassigned.toFixed(0)}</span>
+            <span className="text-orange-600">Unassigned: {formatIDR(totalUnassigned)}</span>
           )}
         </div>
         {totalUnassigned > 0 && (
@@ -86,17 +85,17 @@ ${itemDetails}
             >
               {/* Header - always visible */}
               <div
-                className="flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50"
+                className="flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50 gap-3"
                 onClick={() => setExpandedId(isExpanded ? null : bill.participant.id)}
               >
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center font-medium">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-8 h-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center font-medium shrink-0">
                     {bill.participant.name.charAt(0).toUpperCase()}
                   </div>
-                  <span className="font-medium">{bill.participant.name}</span>
+                  <span className="font-medium truncate min-w-0">{bill.participant.name}</span>
                 </div>
-                <div className="flex items-center gap-3">
-                  <span className="text-lg font-semibold">IDR {bill.total.toFixed(0)}</span>
+                <div className="flex items-center gap-3 shrink-0">
+                  <span className="text-base sm:text-lg font-semibold">{formatIDR(bill.total)}</span>
                   <svg
                     className={`w-5 h-5 text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
                     fill="none"
@@ -116,16 +115,16 @@ ${itemDetails}
                     <p className="text-xs font-medium text-gray-500 uppercase">Items</p>
                     {bill.items.map((pItem) => {
                       return (
-                        <div key={pItem.item.id} className="flex justify-between text-sm">
-                          <span className="text-gray-600">
+                        <div key={pItem.item.id} className="flex justify-between text-sm gap-2">
+                          <span className="text-gray-600 truncate min-w-0">
                             {pItem.item.name}
                             {pItem.share_percentage < 100 && (
                               <span className="text-gray-400 ml-1">
-                                ({pItem.share_percentage.toFixed(0)}%)
+                                ({formatNumber(pItem.share_percentage)}%)
                               </span>
                             )}
                           </span>
-                          <span>IDR {pItem.share_amount.toFixed(0)}</span>
+                          <span className="shrink-0">{formatIDR(pItem.share_amount)}</span>
                         </div>
                       );
                     })}
@@ -133,21 +132,21 @@ ${itemDetails}
 
                   {/* Subtotals */}
                   <div className="border-t pt-2 space-y-1">
-                    <div className="flex justify-between text-sm">
+                    <div className="flex justify-between text-sm gap-2">
                       <span className="text-gray-500">Items Subtotal</span>
-                      <span>IDR {bill.subtotal.toFixed(0)}</span>
+                      <span className="shrink-0">{formatIDR(bill.subtotal)}</span>
                     </div>
-                    <div className="flex justify-between text-sm">
+                    <div className="flex justify-between text-sm gap-2">
                       <span className="text-gray-500">Tax</span>
-                      <span>IDR {bill.tax_share.toFixed(0)}</span>
+                      <span className="shrink-0">{formatIDR(bill.tax_share)}</span>
                     </div>
-                    <div className="flex justify-between text-sm">
+                    <div className="flex justify-between text-sm gap-2">
                       <span className="text-gray-500">Service</span>
-                      <span>IDR {bill.service_share.toFixed(0)}</span>
+                      <span className="shrink-0">{formatIDR(bill.service_share)}</span>
                     </div>
-                    <div className="flex justify-between font-medium pt-1 border-t">
+                    <div className="flex justify-between font-medium pt-1 border-t gap-2">
                       <span>Total</span>
-                      <span>IDR {bill.total.toFixed(0)}</span>
+                      <span className="shrink-0">{formatIDR(bill.total)}</span>
                     </div>
                   </div>
 
