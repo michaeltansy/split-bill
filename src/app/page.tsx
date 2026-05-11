@@ -1,8 +1,11 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/components/Toast';
+import { useBillScan } from '@/hooks/useBillScan';
+
+const OCR_ENABLED = process.env.NEXT_PUBLIC_OCR_ENABLED === 'true';
 
 type DraftItem = {
   id: string;
@@ -27,6 +30,43 @@ export default function Home() {
   const [taxAmount, setTaxAmount] = useState('');
   const [serviceAmount, setServiceAmount] = useState('');
   const [isCreating, setIsCreating] = useState(false);
+
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const { scan, isScanning, cooldownRemaining, isCoolingDown } = useBillScan();
+
+  const handlePickFile = () => {
+    if (isScanning || isCoolingDown || isCreating) return;
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = ''; // allow re-selecting the same file later
+    if (!file) return;
+
+    const result = await scan(file);
+    if (!result) {
+      addToast('Could not extract bill. You can still fill the form manually.', 'error');
+      return;
+    }
+
+    if (result.items.length === 0) {
+      addToast('No items detected in the image. Please add them manually.', 'info');
+      return;
+    }
+
+    setItems(
+      result.items.map((i) => ({
+        id: crypto.randomUUID(),
+        name: i.name,
+        price: String(i.price),
+        quantity: String(i.quantity),
+      }))
+    );
+    if (result.tax_amount > 0) setTaxAmount(String(result.tax_amount));
+    if (result.service_amount > 0) setServiceAmount(String(result.service_amount));
+    addToast(`Filled ${result.items.length} item(s). Review and edit before creating.`, 'success');
+  };
 
   const { parsedItems, subtotal, taxNum, serviceNum, grandTotal, taxPct, servicePct } =
     useMemo(() => {
@@ -110,6 +150,31 @@ export default function Home() {
           <h1 className="text-4xl font-bold mb-2">Split Bill</h1>
           <p className="text-gray-600">Add items, tax, and service fee — then create your session.</p>
         </header>
+
+        {OCR_ENABLED && (
+          <section className="mb-6">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleFileChange}
+              className="hidden"
+            />
+            <button
+              type="button"
+              onClick={handlePickFile}
+              disabled={isScanning || isCoolingDown || isCreating}
+              title="Free Gemini tier — about 8 scans per minute. Manual entry has no limit."
+              className="w-full border-2 border-dashed border-gray-300 rounded-lg p-4 text-sm text-gray-600 hover:border-blue-400 hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              {isScanning
+                ? 'Scanning bill image…'
+                : isCoolingDown
+                ? `Wait ${cooldownRemaining}s before scanning again`
+                : 'Have a bill photo? Tap to scan and auto-fill (optional)'}
+            </button>
+          </section>
+        )}
 
         <section className="bg-white rounded-lg shadow-sm p-6 mb-6">
           <div className="flex items-center justify-between mb-4">
