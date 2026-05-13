@@ -37,6 +37,11 @@ export default function SessionPage({
     updateItem,
     deleteItem,
     updateAssignments,
+    claimItem,
+    unclaimItem,
+    setShare,
+    applyAssignmentLocally,
+    removeAssignmentLocally,
   } = useSession(id);
 
   const { bills, totalAssigned, totalUnassigned } = useBillCalculation(
@@ -114,62 +119,64 @@ export default function SessionPage({
     [updateSession]
   );
 
-  // Handler for participant claiming/unclaiming items
+  // Per-participant claim/unclaim with optimistic apply + rollback. The optimistic
+  // row matches the realtime echo's (item_id, participant_id) key so the echo
+  // idempotently replaces the placeholder when it arrives.
   const handleClaimItem = useCallback(
     async (itemId: string, claim: boolean) => {
       if (!currentParticipant) return;
-
-      const item = items.find((i) => i.id === itemId);
-      if (!item) return;
+      const pid = currentParticipant.id;
 
       if (claim) {
-        // Add this participant to the item's assignments
-        const existingAssignments = item.assignments || [];
-        const newAssignments = [
-          ...existingAssignments.map((a) => ({
-            participant_id: a.participant_id,
-            split_type: 'equal' as const,
-            percentage: 100 / (existingAssignments.length + 1),
-          })),
-          {
-            participant_id: currentParticipant.id,
-            split_type: 'equal' as const,
-            percentage: 100 / (existingAssignments.length + 1),
-          },
-        ];
-        await updateAssignments(itemId, { assignments: newAssignments });
+        const optimistic: ItemAssignment = {
+          id: `optimistic-${itemId}-${pid}`,
+          item_id: itemId,
+          session_id: id,
+          participant_id: pid,
+          split_type: 'equal',
+          percentage: null,
+          unit_count: null,
+          created_at: new Date().toISOString(),
+        };
+        applyAssignmentLocally(optimistic);
+        try {
+          await claimItem(itemId, pid);
+        } catch (e) {
+          removeAssignmentLocally(itemId, pid);
+          throw e;
+        }
       } else {
-        // Remove this participant from the item's assignments
-        const remainingAssignments = (item.assignments || [])
-          .filter((a) => a.participant_id !== currentParticipant.id)
-          .map((a, _, arr) => ({
-            participant_id: a.participant_id,
-            split_type: 'equal' as const,
-            percentage: 100 / arr.length,
-          }));
-        await updateAssignments(itemId, { assignments: remainingAssignments });
+        const prior = items
+          .find((i) => i.id === itemId)
+          ?.assignments.find((a) => a.participant_id === pid);
+        removeAssignmentLocally(itemId, pid);
+        try {
+          await unclaimItem(itemId, pid);
+        } catch (e) {
+          if (prior) applyAssignmentLocally(prior);
+          throw e;
+        }
       }
     },
-    [currentParticipant, items, updateAssignments]
+    [
+      currentParticipant,
+      items,
+      id,
+      claimItem,
+      unclaimItem,
+      applyAssignmentLocally,
+      removeAssignmentLocally,
+    ]
   );
 
-  // Handler for updating share percentage
+  // Percentage edit goes through the validated RPC. No optimistic update — the
+  // server may reject (sum != 100) and rolling back a percentage value is hairy.
   const handleUpdateShare = useCallback(
     async (itemId: string, percentage: number) => {
       if (!currentParticipant) return;
-
-      const item = items.find((i) => i.id === itemId);
-      if (!item) return;
-
-      const updatedAssignments = (item.assignments || []).map((a) => ({
-        participant_id: a.participant_id,
-        split_type: 'percentage' as const,
-        percentage: a.participant_id === currentParticipant.id ? percentage : a.percentage || 0,
-      }));
-
-      await updateAssignments(itemId, { assignments: updatedAssignments });
+      await setShare(itemId, currentParticipant.id, 'percentage', { percentage });
     },
-    [currentParticipant, items, updateAssignments]
+    [currentParticipant, setShare]
   );
 
   if (isLoading) {

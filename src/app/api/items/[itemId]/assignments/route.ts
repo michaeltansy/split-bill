@@ -27,6 +27,10 @@ export async function PUT(
       );
     }
 
+    // Fast-path validation: surface friendlier error messages and skip the RPC
+    // round trip when the body is obviously wrong. The RPC is still the source
+    // of truth for atomicity against concurrent writers.
+
     // Percentage split: assignments tagged 'percentage' must sum to 100
     const percentageAssignments = body.assignments.filter((a) => a.split_type === 'percentage');
     if (percentageAssignments.length > 0) {
@@ -64,34 +68,42 @@ export async function PUT(
       }
     }
 
-    // Delete existing assignments
-    await supabase.from('item_assignments').delete().eq('item_id', itemId);
+    // Atomic replace: locks the items row, deletes existing rows, inserts the new
+    // set, validates sums — all in one transaction (see migration 004).
+    const { data, error } = await supabase.rpc('replace_assignments_validated', {
+      p_item_id: itemId,
+      p_assignments: body.assignments,
+    });
 
-    // Insert new assignments
-    if (body.assignments.length > 0) {
-      const rows = body.assignments.map((a) => ({
-        item_id: itemId,
-        session_id: item.session_id,
-        participant_id: a.participant_id,
-        split_type: a.split_type,
-        percentage: a.split_type === 'percentage' ? a.percentage ?? null : null,
-        unit_count: a.split_type === 'unit' ? a.unit_count ?? null : null,
-      }));
-
-      const { error } = await supabase.from('item_assignments').insert(rows);
-      if (error) {
+    if (error) {
+      const msg = error.message || '';
+      if (msg.startsWith('INVALID_PERCENTAGE_SUM')) {
         return NextResponse.json(
-          { error: error.message, code: 'INVALID_INPUT' },
+          { error: 'Percentages must sum to 100', code: 'INVALID_PERCENTAGE' },
           { status: 400 }
         );
       }
+      if (msg.startsWith('INVALID_UNIT_SUM')) {
+        const parts = msg.split(':');
+        return NextResponse.json(
+          {
+            error: `Unit counts must sum to the item's quantity (${parts[2]}). Got ${parts[1]}.`,
+            code: 'INVALID_UNIT_SUM',
+          },
+          { status: 400 }
+        );
+      }
+      if (msg.startsWith('ITEM_NOT_FOUND')) {
+        return NextResponse.json(
+          { error: 'Item not found', code: 'ITEM_NOT_FOUND' },
+          { status: 404 }
+        );
+      }
+      return NextResponse.json(
+        { error: error.message, code: 'INVALID_INPUT' },
+        { status: 400 }
+      );
     }
-
-    // Fetch updated assignments
-    const { data } = await supabase
-      .from('item_assignments')
-      .select('*')
-      .eq('item_id', itemId);
 
     return NextResponse.json(data || []);
   } catch (error) {
