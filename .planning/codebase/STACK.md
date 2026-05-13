@@ -1,134 +1,165 @@
 # Technology Stack
 
-**Analysis Date:** 2026-05-08
+**Analysis Date:** 2026-05-12
 
 ## Languages
 
 **Primary:**
-- TypeScript 5.5.x — all application source under `src/`
-- SQL — Supabase schema migrations (`supabase/migrations/001_initial_schema.sql`)
+- TypeScript ^5.5.0 — all application source under `src/`
+- SQL — Supabase schema and migrations under `supabase/migrations/` (`001_initial_schema.sql`, `002_assignments_session_id.sql`, `003_assignments_unit_split.sql`)
 
 **Secondary:**
-- Go — stray file `src/hooks/lru.go` (not part of the build; appears to be a leftover artifact)
+- JavaScript (ES module) — config files only (`next.config.js`, `postcss.config.mjs`)
 
 ## Runtime
 
 **Environment:**
-- Node.js 20 (pinned in `Dockerfile`: `FROM node:20-alpine`)
-- No `.nvmrc` or `.node-version` file present; local Node.js version in use is 22.12.0
-
-**Scripts require:**
-- `NODE_OPTIONS=--openssl-legacy-provider` flag on all `next dev/build/start` commands (needed for OpenSSL compatibility on Node 17+)
+- Node.js >=20 (declared in `package.json` `engines.node`; Dockerfile base image `node:20-alpine`)
+- No `.nvmrc` / `.node-version` file present
 
 **Package Manager:**
-- npm (lockfile: `package-lock.json` — present and committed)
+- npm (lockfile: `package-lock.json` — committed)
+- `npm ci` used in Docker `deps` stage
+
+**Scripts (`package.json`):**
+- `dev` → `next dev`
+- `build` → `next build`
+- `start` → `next start`
+- `lint` → `next lint`
+- `test` → `vitest`
+- `test:run` → `vitest run`
+- `test:coverage` → `vitest run --coverage`
 
 ## Frameworks
 
 **Core:**
-- Next.js ^15.2.0 — full-stack React framework; App Router used (`src/app/`)
+- Next.js ^15.2.0 — App Router (`src/app/`), Route Handlers for the API, edge `middleware.ts`
 - React ^18.3.1 — UI rendering
 - React DOM ^18.3.1 — DOM bindings
 
 **Styling:**
-- Tailwind CSS ^3.4.4 — utility-class CSS framework
-- PostCSS ^8.4.38 — CSS processing pipeline (`postcss.config.mjs`)
-- Autoprefixer ^10.4.19 — vendor-prefix CSS output
+- Tailwind CSS ^3.4.4 — utility-class CSS framework (`tailwind.config.ts`)
+- PostCSS ^8.4.38 — pipeline (`postcss.config.mjs`)
+- Autoprefixer ^10.4.19 — vendor-prefix output
+- `next/font/google` Inter font loaded in `src/app/layout.tsx`
 
 **Testing:**
-- Vitest ^4.1.5 — test runner (config: `vitest.config.ts`)
-- @testing-library/react ^16.3.2 — React component testing utilities
+- Vitest ^4.1.5 — test runner (`vitest.config.ts`)
+- @testing-library/react ^16.3.2 — React component testing
 - @testing-library/jest-dom ^6.9.1 — DOM matchers
-- jsdom ^29.1.0 — browser environment simulation in tests
+- jsdom ^29.1.0 — browser environment for tests
 
 **Build/Dev:**
-- @vitejs/plugin-react ^6.0.1 — React plugin for Vitest's Vite-based test runner
-- Next.js built-in compiler (SWC) — no separate Babel config detected
+- @vitejs/plugin-react ^6.0.1 — React plugin for Vitest's Vite-based test pipeline
+- Next.js built-in compiler (SWC) — no Babel config detected
+- `eslint-config-next` ^15.2.0 over `eslint` ^8.57.0
 
 ## Key Dependencies
 
-**Critical:**
-- `@google/generative-ai` ^0.24.1 — Google Gemini AI SDK; used exclusively in `src/app/api/ocr/route.ts` to drive receipt parsing via `gemini-2.0-flash` model
-- `@supabase/supabase-js` ^2.45.0 — Supabase client; used in `src/lib/supabase.ts` for both browser (anon key) and server (service role key) clients
-- `qrcode.react` ^4.2.0 — QR code generation component (`QRCodeSVG`) used in `src/components/ShareModal.tsx`
-
-**Infrastructure:**
-- None beyond the above (no Redis, no message queue, no additional ORM layer)
-
-## Configuration
-
-**TypeScript:**
-- Config: `tsconfig.json`
-- `strict: true` enabled
-- Path alias: `@/*` → `./src/*`
-- Target: ES2017; module: esnext; moduleResolution: node
-- `isolatedModules: true` (required for Next.js SWC)
-- `noEmit: true` (Next.js owns the emit step)
-
-**Tailwind:**
-- Config: `tailwind.config.ts`
-- Content paths cover `src/pages/`, `src/components/`, `src/app/`
-- Custom CSS variables for `background` and `foreground` colours
-
-**ESLint:**
-- Config: `.eslintrc.json`
-- Extends: `next/core-web-vitals` (no additional rules configured)
-
-**Next.js:**
-- Config: `next.config.js`
-- `output: 'standalone'` — produces a self-contained build artefact for Docker deployment
-
-**Vitest:**
-- Config: `vitest.config.ts`
-- Environment: `jsdom`
-- Globals enabled
-- Setup file: `src/test/setup.ts`
-- Test include pattern: `src/**/*.{test,spec}.{js,ts,jsx,tsx}`
-- Coverage reporters: text, json, html
-
-## Dev vs Prod Dependency Split
-
 **Production (`dependencies`):**
-| Package | Version |
-|---------|---------|
-| `@google/generative-ai` | ^0.24.1 |
-| `@supabase/supabase-js` | ^2.45.0 |
-| `next` | ^15.2.0 |
-| `qrcode.react` | ^4.2.0 |
-| `react` | ^18.3.1 |
-| `react-dom` | ^18.3.1 |
+
+| Package | Version | Purpose |
+|---------|---------|---------|
+| `next` | ^15.2.0 | Framework, App Router, route handlers, middleware |
+| `react` | ^18.3.1 | UI library |
+| `react-dom` | ^18.3.1 | DOM renderer |
+| `@supabase/supabase-js` | ^2.45.0 | Postgres client + realtime; wired in `src/lib/supabase.ts` (browser + server clients) |
+| `@google/generative-ai` | ^0.24.1 | Google Gemini SDK; used in `src/app/api/ocr/route.ts` (`gemini-2.5-flash-lite`) for receipt OCR |
+| `@upstash/ratelimit` | ^2.0.8 | Sliding-window rate limiter; wired in `src/lib/ratelimit.ts` |
+| `@upstash/redis` | ^1.38.0 | Upstash REST Redis client used by `@upstash/ratelimit` |
+| `qrcode.react` | ^4.2.0 | `QRCodeSVG` component used in `src/components/ShareModal.tsx` |
 
 **Development (`devDependencies`):**
+
 | Package | Version |
 |---------|---------|
-| `@testing-library/jest-dom` | ^6.9.1 |
-| `@testing-library/react` | ^16.3.2 |
+| `typescript` | ^5.5.0 |
 | `@types/node` | ^20.14.0 |
 | `@types/react` | ^18.3.3 |
 | `@types/react-dom` | ^18.3.0 |
-| `@vitejs/plugin-react` | ^6.0.1 |
-| `autoprefixer` | ^10.4.19 |
 | `eslint` | ^8.57.0 |
 | `eslint-config-next` | ^15.2.0 |
-| `jsdom` | ^29.1.0 |
-| `postcss` | ^8.4.38 |
 | `tailwindcss` | ^3.4.4 |
-| `typescript` | ^5.5.0 |
+| `autoprefixer` | ^10.4.19 |
+| `postcss` | ^8.4.38 |
 | `vitest` | ^4.1.5 |
+| `@vitejs/plugin-react` | ^6.0.1 |
+| `@testing-library/react` | ^16.3.2 |
+| `@testing-library/jest-dom` | ^6.9.1 |
+| `jsdom` | ^29.1.0 |
+
+## Configuration
+
+**TypeScript (`tsconfig.json`):**
+- `strict: true`
+- Path alias: `@/*` → `./src/*`
+- `target: ES2017`, `module: esnext`, `moduleResolution: bundler`
+- `jsx: preserve`, `isolatedModules: true`, `noEmit: true`
+- `lib: [dom, dom.iterable, esnext]`
+- `incremental: true` with `plugins: [{ name: "next" }]`
+- Excludes: `node_modules`, `supabase/functions` (Deno code), `vitest.config.ts`, `src/test`, `**/*.test.{ts,tsx}`
+
+**Tailwind (`tailwind.config.ts`):**
+- Content paths cover `src/pages/`, `src/components/`, `src/app/`
+- Custom CSS variables `background` and `foreground` exposed as theme colors
+
+**PostCSS (`postcss.config.mjs`):**
+- Plugins: `tailwindcss`, `autoprefixer`
+
+**ESLint (`.eslintrc.json`):**
+- Extends: `next/core-web-vitals` (no additional rules)
+
+**Next.js (`next.config.js`):**
+- Empty config object (no overrides). Standalone output is produced by Next.js defaults in the Docker build via `.next/standalone` copy in the Dockerfile.
+- `NEXT_TELEMETRY_DISABLED=1` set in Dockerfile
+
+**Vitest (`vitest.config.ts`):**
+- Environment: `jsdom`
+- `globals: true`
+- Setup file: `src/test/setup.ts`
+- Include pattern: `src/**/*.{test,spec}.{js,ts,jsx,tsx}`
+- Coverage reporters: `text`, `json`, `html`
+- Alias: `@` → `./src` mirroring `tsconfig.json`
+
+## Test Tooling
+
+- Vitest + React Testing Library + jsdom; setup at `src/test/setup.ts`
+- Existing unit tests: `src/lib/calculations.test.ts`, `src/lib/validation.test.ts`
+- No E2E framework configured
+
+## Deployment Targets
+
+**Docker (`Dockerfile`):**
+- Multi-stage build using `node:20-alpine`
+- Stages: `base` → `deps` (`npm ci`) → `builder` (`npm run build`) → `runner`
+- Production user: non-root `nextjs:nodejs` (uid/gid 1001)
+- Copies Next.js standalone artefact (`.next/standalone`) and `.next/static`
+- Exposes port 3000; runs `node server.js`
+
+**Docker Compose (`docker-compose.yml`):**
+- Single `web` service, port mapping `3000:3000`
+- `restart: unless-stopped`
+- Env passthrough: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `NEXT_PUBLIC_APP_URL` (defaults to `http://localhost:3000`)
+- Note: `GEMINI_API_KEY` and Upstash variables are NOT forwarded in `docker-compose.yml` despite being required for OCR and rate limiting respectively (gap)
+
+**Other targets:**
+- Vercel-compatible (Next.js 15 App Router), but no `vercel.json` committed
+- Supabase Edge Functions deployment for `cleanup-sessions` (Deno runtime, separate `supabase functions deploy`)
 
 ## Platform Requirements
 
 **Development:**
-- Node.js 20+ (22.x works with `--openssl-legacy-provider`)
-- npm (lockfile present)
+- Node.js >=20
+- npm with committed lockfile
+- A Supabase project (URL + anon key + service-role key)
+- Optional: `GEMINI_API_KEY` to enable receipt scan UI (`NEXT_PUBLIC_OCR_ENABLED=true`)
+- Optional: Upstash Redis REST credentials to enable rate limiting
 
 **Production:**
-- Docker (multi-stage `Dockerfile` using `node:20-alpine`)
-- Docker Compose (`docker-compose.yml`) for single-container deployment on port 3000
-- Next.js standalone output mode — runs as `node server.js`
-- Supabase project (cloud or self-hosted) for database
-- Gemini API key for OCR functionality
+- Docker host capable of running the standalone Next.js server, or any Node 20 runtime
+- Supabase project with migrations `001`–`003` applied
+- (Optional) Supabase CLI to deploy the `cleanup-sessions` edge function on cron
 
 ---
 
-*Stack analysis: 2026-05-08*
+*Stack analysis: 2026-05-12*

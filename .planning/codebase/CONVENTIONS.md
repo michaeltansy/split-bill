@@ -1,174 +1,156 @@
 # Coding Conventions
 
-**Analysis Date:** 2026-05-08
+**Analysis Date:** 2026-05-12
 
 ## Naming Patterns
 
 **Files:**
-- React components: PascalCase, `.tsx` extension — `BillSummary.tsx`, `ItemCard.tsx`, `ParticipantView.tsx`
-- Hooks: camelCase with `use` prefix, `.ts` extension — `useSession.ts`, `useOCR.ts`, `useBillCalculation.ts`
-- Pure utility/library modules: camelCase, `.ts` extension — `calculations.ts`, `validation.ts`, `supabase.ts`
-- Test files: co-located with source, same name plus `.test.ts` suffix — `calculations.test.ts`, `validation.test.ts`
-- API routes: Next.js App Router convention — `src/app/api/[resource]/route.ts`
-- Type file: single barrel at `src/types/index.ts`
+- React components: PascalCase, `.tsx` extension — `src/components/BillSummary.tsx`, `src/components/ItemCard.tsx`, `src/components/ParticipantView.tsx`, `src/components/TaxServiceInput.tsx`
+- Hooks: camelCase with `use` prefix, `.ts` extension — `src/hooks/useSession.ts`, `src/hooks/useBillScan.ts`, `src/hooks/useBillCalculation.ts`, `src/hooks/useShareSession.ts`, `src/hooks/useClipboard.ts`
+- Library/utility modules: camelCase, `.ts` extension — `src/lib/calculations.ts`, `src/lib/validation.ts`, `src/lib/format.ts`, `src/lib/supabase.ts`, `src/lib/ratelimit.ts`
+- Test files: co-located with source, same base name plus `.test.ts` suffix — `src/lib/calculations.test.ts`, `src/lib/validation.test.ts`
+- API routes: Next.js App Router convention — `src/app/api/[resource]/route.ts`, dynamic segments use bracket folders (`src/app/api/sessions/[id]/items/[itemId]/route.ts`)
+- Page routes: `src/app/page.tsx`, `src/app/session/[id]/page.tsx`
+- Shared types: single barrel at `src/types/index.ts`
+- Middleware: `src/middleware.ts`
 
 **Functions:**
-- Exported component functions: PascalCase — `function BillSummary(...)`, `function ItemCard(...)`
-- Exported hooks: camelCase with `use` prefix — `export function useSession(...)`, `export function useOCR(...)`
-- Event handlers inside components: camelCase with `handle` prefix — `handleSaveEdit`, `handleDelete`, `handleCopyBill`, `handleClaim`
-- Pure utility functions: camelCase, verb-first — `calculateParticipantBills`, `validateParticipantName`, `stripCodeFences`
-- API route exports: named HTTP method — `export async function POST(request: NextRequest)`
+- Exported component functions: PascalCase, prefer named exports — `export function BillSummary(...)`, `export function ItemCard(...)`. Only `src/app/page.tsx` and `src/app/session/[id]/page.tsx` use `export default function` (required by Next.js App Router for pages/layouts)
+- Exported hooks: camelCase with `use` prefix — `export function useSession(...)`, `export function useBillScan(...)`
+- Event handlers inside components: camelCase with `handle` prefix — `handleSaveEdit`, `handleDelete`, `handleCopyBill`, `handleClaim`, `handleToggleParticipant`
+- Pure utility functions: camelCase, verb-first — `calculateParticipantBills`, `validateParticipantName`, `sanitiseItems`, `formatIDR`
+- API route exports: named HTTP method — `export async function POST(request: NextRequest, ...)`, `GET`, `PATCH`, `DELETE`, `PUT`
 
 **Variables:**
-- camelCase throughout — `sessionId`, `editName`, `totalSubtotal`, `isProcessing`
-- Boolean state variables prefixed with `is` or `has` — `isLoading`, `isEditing`, `isDeleting`, `hasChanges`
+- camelCase throughout — `sessionId`, `editName`, `totalSubtotal`, `isCreating`, `cooldownRemaining`
+- Boolean state variables use `is`/`has`/`can` prefix — `isLoading`, `isEditing`, `isDeleting`, `hasChanges`, `canSubmit`, `canShare`
 - State setter names follow React convention — `setIsLoading`, `setSession`, `setError`
+- Top-of-file module constants: SCREAMING_SNAKE_CASE — `COOLDOWN_MS` (`src/hooks/useBillScan.ts:5`), `PROMPT`, `RESPONSE_SCHEMA`, `REQUESTS`, `WINDOW`, `OCR_REQUESTS`, `OCR_WINDOW`, `OCR_ENABLED`, `NUMBER_FORMAT`
 
 **Types/Interfaces:**
-- `interface` used for all type definitions, never `type` alias for object shapes — `interface Session`, `interface Participant`, `interface ValidationResult`
-- `type` used only for union types — `type ToastType = 'success' | 'error' | 'info' | 'warning'`, `type APIErrorCode = ...`
-- Props interfaces named `[ComponentName]Props` — `BillSummaryProps`, `ItemCardProps`, `TaxServiceInputProps`
-- Hook return interfaces named `Use[HookName]Return` — `UseSessionReturn`, `UseOCRReturn`, `UseBillCalculationReturn`
-- Database entity types in `src/types/index.ts`, grouped by category (Database Types, Computed Types, OCR Types, Bill Calculation Types, API Request/Response Types)
+- `interface` is the default for object shapes — `interface Session`, `interface Participant`, `interface ItemCardProps`, `interface UseSessionReturn`, `interface ValidationResult`
+- `type` reserved for unions and aliases — `type SplitType = 'equal' | 'percentage' | 'unit'` (`src/types/index.ts:32`), `type APIErrorCode = ...` (`src/types/index.ts:102`), `type ToastType = ...` (`src/components/Toast.tsx:12`), `type DraftItem = { ... }` (`src/app/page.tsx:11`)
+- Props interfaces named `[ComponentName]Props` — `BillSummaryProps`, `ItemCardProps`, `TaxServiceInputProps`, `ParticipantManagerProps`
+- Hook return types named `Use[Name]Return` — `UseSessionReturn`, `UseBillScanReturn`, `UseClipboardReturn`, `UseShareSessionReturn`, `UseBillCalculationReturn`
+- Database row types use snake_case fields to match Supabase columns — `session_id`, `tax_amount`, `expires_at`, `split_type`
+
+**Database/API field names:**
+- snake_case in DB rows and API JSON payloads — `subtotal`, `tax_amount`, `service_amount`, `grand_total`, `participant_id`, `item_id`, `unit_count`
+- camelCase only after the value enters component-local state (`taxAmount`, `serviceAmount`)
 
 ## Code Style
 
 **Formatting:**
-- No Prettier config file present — formatting style is consistent but not enforced by tooling
-- Single quotes for strings in TypeScript source
-- Semicolons at end of statements
-- Trailing commas in multi-line arrays and objects
+- No `.prettierrc` or `.editorconfig` in the repo — formatting is conventional, not enforced
+- 2-space indent, single quotes for strings in `src/**/*.ts(x)` (except `src/app/layout.tsx` which uses double quotes)
+- Trailing semicolons on every statement
+- Trailing commas in multi-line object/array literals and in multi-line function parameter lists
+- Arrow functions for inline callbacks; `function` keyword for top-level exports
 
 **Linting:**
-- ESLint with `next/core-web-vitals` config via `.eslintrc.json`
-- No custom rules beyond the Next.js default preset
+- ESLint via `eslint-config-next` (v15.2.0) — only configured implicitly through `next lint`
+- No `.eslintrc.*` file checked into repo; relies on defaults from `next/core-web-vitals`
+- Run with `npm run lint`
 
-## TypeScript Usage
-
-**Strict mode:** Enabled (`"strict": true` in `tsconfig.json`)
-
-**Type imports:** Always use `import type { ... }` for type-only imports — seen consistently across all files:
-```typescript
-import type { Session, Participant, ItemWithAssignments } from '@/types';
-```
-
-**Non-null assertions:** Used for env vars with guaranteed presence:
-```typescript
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-```
-
-**Generics:** Used for React state and Maps — `useState<Session | null>(null)`, `new Map<string, ParticipantBill>()`
-
-**`any` usage:** Present in one API route for bulk insert parsing — `(item: any)` in `src/app/api/sessions/[id]/items/route.ts` line 16. Otherwise the codebase avoids `any`.
-
-**`unknown` for catch blocks:** `catch { }` (empty catch) used in some places; `err instanceof Error` narrowing used consistently where error messages are extracted:
-```typescript
-catch (err) {
-  const message = err instanceof Error ? err.message : 'Failed to process image';
-}
-```
-
-## Path Aliases
-
-**Configured alias:** `@/*` maps to `./src/*` in both `tsconfig.json` and `vitest.config.ts`
-
-**Usage:** All internal imports use the `@/` alias — never relative paths across directories:
-```typescript
-import { supabase } from '@/lib/supabase';
-import type { OCRResult } from '@/types';
-import { calculateParticipantBills } from '@/lib/calculations';
-```
+**TypeScript strictness (`tsconfig.json`):**
+- `strict: true`, `forceConsistentCasingInFileNames: true`, `isolatedModules: true`, `moduleResolution: "bundler"`
+- `target: ES2017`, `jsx: "preserve"`
+- Test files explicitly excluded from the main `tsc` program (`**/*.test.ts`, `**/*.test.tsx`, `src/test`)
+- Single path alias: `"@/*": ["./src/*"]` — mirrored in `vitest.config.ts` via `resolve.alias`
+- Allowed escape hatches: `as any` appears in `src/app/api/sessions/[id]/items/route.ts:15` and `let assignments: any[] = []` in `src/app/api/sessions/[id]/route.ts:47` — both contained to one-line API surface adapters
 
 ## Import Organization
 
-**Order (observed):**
-1. React and Next.js framework imports (`react`, `next/server`, `next/navigation`)
-2. External library imports (`@supabase/supabase-js`, `@google/generative-ai`)
-3. Internal module imports using `@/` alias (hooks, lib, components)
-4. Type-only imports using `import type` (always last in the import block)
+**Conventional order (no automated enforcement):**
+1. External packages — `next/server`, `react`, `@supabase/supabase-js`, `@google/generative-ai`
+2. Internal aliased imports — `@/lib/...`, `@/components/...`, `@/hooks/...`, `@/types`
+3. Relative imports — `./Toast`, `./calculations` (only between siblings in the same directory)
+4. Type-only imports use `import type { ... }` — `import type { Session, Participant } from '@/types'`, `import type { NextRequest } from 'next/server'` (`src/middleware.ts:2`)
 
-No blank lines separating import groups — all imports run consecutively.
+**Mixed value + type imports:** prefer two separate `import` lines or use inline `type` modifier — `import { GoogleGenerativeAI, SchemaType, type Schema } from '@google/generative-ai'` (`src/app/api/ocr/route.ts:2`)
 
-## Client vs Server Boundary
+**Path aliases:**
+- `@/*` → `src/*` (tsconfig and vitest)
+- No deep imports through index re-exports — types come from `@/types` (the only barrel)
 
-**`'use client'` directive:** Present at the top of every component file and every hook file. Only API routes and `src/lib/supabase.ts` omit it (they are server-side).
+## Component Patterns
 
-Pattern:
-- `src/app/api/**/*.ts` — server-only, no directive
-- `src/components/*.tsx` — always `'use client'`
-- `src/hooks/*.ts` — always `'use client'`
-- `src/lib/calculations.ts`, `src/lib/validation.ts` — no directive (pure functions, usable anywhere)
+**Function components:**
+- Named exports, destructured props in signature — `export function BillSummary({ bills, totalAssigned, totalUnassigned, grandTotal }: BillSummaryProps)`
+- Props typed inline via `[ComponentName]Props` interface declared immediately above the component
+- Default values for optional props applied via destructuring defaults — `disabled = false`
+
+**Client vs server components:**
+- Every interactive component, hook, and page that uses state/effects starts with `'use client';` on line 1 — applies to all files in `src/components/`, `src/hooks/`, plus `src/app/page.tsx` and `src/app/session/[id]/page.tsx`
+- API route handlers (`src/app/api/**/route.ts`), `src/app/layout.tsx`, `src/app/manifest.ts`, and `src/middleware.ts` are server-only — no directive needed
+- No `'use server'` directives or Server Actions — all mutations go through API route fetch calls
+
+**State management:**
+- Local `useState` only — no Zustand, Redux, Jotai, etc.
+- Cross-component state lives in React Context. The only provider is `ToastProvider` (`src/components/Toast.tsx`) wrapped by `src/components/Providers.tsx` and mounted in `src/app/layout.tsx`
+- Hooks throw inside `useContext` consumer when accessed outside provider — `throw new Error('useToast must be used within a ToastProvider')` (`src/components/Toast.tsx:31`)
+- Memoize derived values with `useMemo`; memoize event handlers with `useCallback` (used pervasively in `ItemCard.tsx`, `ParticipantView.tsx`, `useBillCalculation.ts`)
+
+**Tailwind usage:**
+- All styling via Tailwind utility classes inline in `className` — no CSS modules, no styled-components
+- `tailwind.config.ts` content paths: `./src/pages`, `./src/components`, `./src/app`
+- Color palette uses Tailwind defaults (blue-600, green-600, red-600, yellow-50, gray-50, etc.) — no custom theme tokens beyond `background`/`foreground` CSS vars
+- Mobile-first responsive: base styles + `sm:`, `md:`, `lg:` prefixes (e.g. `text-base sm:text-lg`, `grid-cols-1 md:grid-cols-2 lg:grid-cols-3`)
+- State variants used: `hover:`, `focus:`, `disabled:`, `disabled:opacity-50 disabled:cursor-not-allowed` for buttons
+- Conditional classes built via template literals or ternary, not via `clsx`/`cn` (no helper imported)
+- Inline SVGs for icons — no icon library
+
+## Data Fetching Patterns
+
+**No SWR, react-query, or Server Actions.** All data access goes through:
+
+1. **Server side (API routes):** Direct Supabase client created per-request via `createServerClient()` from `src/lib/supabase.ts:9` (uses `SUPABASE_SERVICE_ROLE_KEY`). API route handlers in `src/app/api/**/route.ts` await Next.js promise-based `params` (`{ params }: { params: Promise<{ id: string }> }`), call Supabase, return `NextResponse.json(...)`.
+
+2. **Client side (hooks):** A thin `apiFetch` helper in `src/hooks/useSession.ts:28-38` wraps `fetch` with JSON content-type and throws on non-OK responses. Hooks own `useState` for data and `useEffect` for the initial load.
+
+3. **Real-time:** `src/hooks/useSession.ts:71-100` subscribes to four Supabase Realtime postgres_changes channels (`sessions`, `participants`, `items`, `item_assignments`) filtered by `session_id`. Each event triggers `fetchSession()` — full re-read rather than incremental patch.
+
+4. **OCR upload:** `src/hooks/useBillScan.ts` `POST`s `multipart/form-data` to `/api/ocr`, which proxies to Gemini and returns parsed items.
+
+**Error response shape (server):** `{ error: string; code: string }` with HTTP status. Codes include `SESSION_NOT_FOUND`, `SESSION_EXPIRED`, `INVALID_INPUT`, `INVALID_PERCENTAGE`, `INVALID_UNIT_COUNT`, `INVALID_UNIT_SUM`, `RATE_LIMITED`, `OCR_DISABLED`, `OCR_PARSE_FAILED`, `OCR_FAILED`, `GEMINI_QUOTA`, `GEMINI_OVERLOADED`, `INTERNAL_ERROR` (definitive list in `src/types/index.ts:102-107` for documented codes).
 
 ## Error Handling
 
-**In hooks:** State-based error tracking with `Error | null` state. Errors thrown from `apiFetch` are caught and stored:
-```typescript
-const [error, setError] = useState<Error | null>(null);
-try { ... } catch (err) {
-  setError(err instanceof Error ? err : new Error('Failed to fetch session'));
-}
-```
+**API routes:** Every handler wraps its body in `try { ... } catch { return NextResponse.json({ error: 'Internal server error', code: 'INTERNAL_ERROR' }, { status: 500 }); }`. Domain errors return early with specific code + 4xx status. The bulk-items route uses `throw new Error(...)` inside a `.map` callback then surfaces it via `error instanceof Error ? error.message : 'Internal server error'` (`src/app/api/sessions/[id]/items/bulk/route.ts:71`).
 
-**In API routes:** Consistent try/catch wrapping entire handler. Supabase errors checked via `if (error)` after each query:
-```typescript
-if (sessionError) {
-  return NextResponse.json(
-    { error: sessionError.message, code: 'INVALID_INPUT' },
-    { status: 400 }
-  );
-}
-```
-Outer catch returns `{ error: 'Internal server error', code: 'INTERNAL_ERROR' }` with status 500.
+**Client fetch:** `apiFetch` reads the JSON body on failure and throws `new Error(body.error || \`Request failed: ${res.status}\`)` (`src/hooks/useSession.ts:35`). Callers narrow with `err instanceof Error ? err.message : 'Fallback message'` before showing to the user.
 
-**Error response shape:** `{ error: string, code: string }` — defined as `APIError` interface in `src/types/index.ts`.
+**User-visible errors:** Surfaced via `useToast().addToast(message, 'error' | 'info' | 'success' | 'warning')`. Each component also tracks a local `error` string for inline form-level messages (see `ParticipantManager.tsx`, `ItemList.tsx`).
 
-**In components:** Errors are surfaced via the `useToast` hook (`addToast('message', 'error')`) rather than rendering error UI inline. Critical errors (session not found) render a full-page error state.
+**Confirmation prompts:** `confirm('Are you sure you want to delete this item?')` (`src/components/ItemCard.tsx:92`) — native browser dialog; no custom modal abstraction.
 
-**In pure lib functions:** No exceptions thrown — all validation functions return `ValidationResult` objects with `{ isValid: boolean, error?: string }`.
+**Logging:** `console.error` / `console.warn` only. The OCR route prefixes logs with `[OCR]` and the rate-limit module with `[ratelimit]`. No logging library, no Sentry/equivalent.
 
-## Logging
+## Function & Module Design
 
-**Framework:** Raw `console.log`, `console.error` — no structured logging library.
+**Function size:** Component functions are large (200–440 lines for `ItemCard.tsx`, `ParticipantView.tsx`, `BillSummary.tsx`) with state, handlers, derived values, and JSX all inline — no split between "container" and "view." Pure utility functions in `src/lib/` are short and single-purpose.
 
-**Patterns:**
-- API routes use prefixed log lines for tracing: `console.log('[OCR] ...', ...)`, `console.log('[createSession] ...')`
-- Hooks log OCR results: `console.log('[OCR] result:', ocrResult)` in `src/hooks/useOCR.ts`
-- `console.error` used for non-fatal failures (clipboard errors, fetch errors in components)
-- No logging in pure library functions (`calculations.ts`, `validation.ts`)
+**Exports:** Named exports only (except Next.js page/layout/manifest defaults). No barrel re-exports outside `src/types/index.ts`.
 
-## React Patterns
+**Comments:** Sparse and reserved for non-obvious intent — e.g. `// Auto-calculate equal percentages` (`ItemCard.tsx:111`), `// Real-time subscriptions — still use the supabase client to listen for / postgres changes, but re-fetch through the API on each event.` (`useSession.ts:69-70`), OCR prompt rules block (`route.ts:5-14`). No JSDoc / TSDoc anywhere.
 
-**State management:** Local component state only via `useState`. No global client state library.
+**Validation:** Pure functions in `src/lib/validation.ts` return `{ isValid: boolean; error?: string }`. They are used directly in `validation.test.ts` and indirectly inside components — but components also inline ad-hoc validation (e.g. `ItemCard.handleSaveEdit` re-implements `isNaN(price) || price < 0` rather than calling `validatePrice`). Server-side validation lives inside the API handlers (`assignments/route.ts:30-65`).
 
-**Memoization:** `useMemo` used for computed values that depend on arrays/objects — `useBillCalculation` is entirely `useMemo`-based. `useCallback` used for event handlers passed as props to prevent unnecessary re-renders.
+## Git Workflow
 
-**Context:** Used sparingly — only for `ToastContext` in `src/components/Toast.tsx`. Pattern: context created with `createContext<ContextType | null>(null)`, consumed via a typed hook that throws if used outside provider.
+**Branches:** Only `main` exists locally and on origin. No feature branches in history.
 
-**Component co-location:** Helper components defined in the same file when they are only used by the parent (e.g., `ToastContainer` and `ToastItem` are unexported private components defined inside `Toast.tsx`).
+**Commit messages:** Free-form lowercase subjects, no Conventional Commits, no scopes, no body. Examples from `git log --oneline`:
+- `unit feature`
+- `provide AI bill reader`
+- `dummy update`
+- `update`
+- `finalize`
+- `finalize the project`
+- `first commit`
 
-## CSS / Styling Conventions
-
-**Framework:** Tailwind CSS v3 — utility classes only, no custom CSS files detected beyond global reset in `app/layout`.
-
-**Patterns:**
-- Layout: `flex`, `grid`, `space-y-*`, `gap-*` for spacing
-- Color palette: `blue-*` for primary actions, `green-*` for success/assigned state, `orange-*`/`red-*` for warnings/errors, `gray-*` for neutral UI
-- Interactive states always include hover variant — `hover:bg-blue-700`, `hover:bg-gray-50`
-- Disabled state via `disabled:opacity-50` on buttons
-- Focus ring: `focus:outline-none focus:ring-2 focus:ring-blue-500` on all inputs
-- Responsive layout with `md:` and `lg:` breakpoint prefixes in page components
-- No custom Tailwind theme extensions beyond two CSS variable colors (`background`, `foreground`)
-
-## Module Design
-
-**Exports:**
-- Components: named exports only — `export function BillSummary(...)`. No default exports except Next.js page components (`export default function Home()`, `export default function SessionPage(...)`)
-- Hooks: named exports — `export function useSession(...)`
-- Types: named exports from `src/types/index.ts`
-- Lib utilities: named exports — `export function calculateParticipantBills(...)`
-
-**No barrel files** for components or hooks — each file exports its own members directly.
+**Tooling:** No `.husky/`, no `.github/`, no `commitlint`, no CI config in the repo.
 
 ---
 
-*Convention analysis: 2026-05-08*
+*Convention analysis: 2026-05-12*
