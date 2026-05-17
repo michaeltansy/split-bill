@@ -144,7 +144,7 @@ export default function Home() {
     <main className="min-h-screen bg-gray-50 py-8 px-4">
       <div className="max-w-2xl mx-auto">
         <header className="mb-8 text-center">
-          <h1 className="text-4xl font-bold mb-2">Split Bill</h1>
+          <h1 className="text-4xl font-bold mb-2 text-gray-900">Split Bill</h1>
           <p className="text-gray-600">Add items, tax, and service fee — then create your session.</p>
         </header>
 

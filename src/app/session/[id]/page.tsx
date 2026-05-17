@@ -198,7 +198,7 @@ export default function SessionPage({
     return (
       <main className="min-h-screen flex flex-col items-center justify-center p-8">
         <div className="text-6xl mb-4">&#9888;&#65039;</div>
-        <h1 className="text-2xl font-bold mb-2">Session not found</h1>
+        <h1 className="text-2xl font-bold mb-2 text-gray-900">Session not found</h1>
         <p className="text-gray-600 mb-4">
           This session may have expired or the link is incorrect.
         </p>
@@ -260,7 +260,7 @@ export default function SessionPage({
     return (
       <main className="min-h-screen flex flex-col items-center justify-center p-8">
         <div className="text-6xl mb-4">&#128100;</div>
-        <h1 className="text-2xl font-bold mb-2">Participant not found</h1>
+        <h1 className="text-2xl font-bold mb-2 text-gray-900">Participant not found</h1>
         <p className="text-gray-600 mb-4">
           &quot;{participantName}&quot; is not in this session.
         </p>
