@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import type {
   Session,
+  SessionBankAccount,
   Participant,
   ItemWithAssignments,
   Item,
@@ -16,6 +17,7 @@ interface UseSessionReturn {
   session: Session | null;
   participants: Participant[];
   items: ItemWithAssignments[];
+  bankAccount: SessionBankAccount | null;
   isLoading: boolean;
   error: Error | null;
   updateSession: (data: Partial<Session>) => Promise<void>;
@@ -33,6 +35,7 @@ interface UseSessionReturn {
     split_type: 'percentage' | 'unit',
     value: { percentage?: number; unit_count?: number }
   ) => Promise<void>;
+  markPaid: (participantId: string, paid: boolean) => Promise<void>;
   applyAssignmentLocally: (row: ItemAssignment) => void;
   removeAssignmentLocally: (itemId: string, participantId: string) => void;
 }
@@ -72,6 +75,7 @@ export function useSession(sessionId: string): UseSessionReturn {
   const [session, setSession] = useState<Session | null>(null);
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [items, setItems] = useState<ItemWithAssignments[]>([]);
+  const [bankAccount, setBankAccount] = useState<SessionBankAccount | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
@@ -81,11 +85,12 @@ export function useSession(sessionId: string): UseSessionReturn {
       setError(null);
 
       const res = await apiFetch(`/api/sessions/${sessionId}`);
-      const { session, participants, items } = await res.json();
+      const { session, participants, items, bank_account } = await res.json();
 
       setSession(session);
       setParticipants(participants ?? []);
       setItems(items ?? []);
+      setBankAccount(bank_account ?? null);
     } catch (err) {
       setError(err instanceof Error ? err : new Error('Failed to fetch session'));
     } finally {
@@ -121,6 +126,14 @@ export function useSession(sessionId: string): UseSessionReturn {
         (payload) => {
           const row = payload.new as Participant;
           setParticipants((curr) => (curr.some((p) => p.id === row.id) ? curr : [...curr, row]));
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'participants', filter: `session_id=eq.${sessionId}` },
+        (payload) => {
+          const row = payload.new as Participant;
+          setParticipants((curr) => curr.map((p) => (p.id === row.id ? { ...p, ...row } : p)));
         }
       )
       .on(
@@ -284,6 +297,35 @@ export function useSession(sessionId: string): UseSessionReturn {
     []
   );
 
+  const markPaid = useCallback(
+    async (participantId: string, paid: boolean) => {
+      // Optimistic: flip locally so the participant sees feedback immediately.
+      // Realtime echo will idempotently confirm or a thrown error rolls back.
+      let prior: Participant | undefined;
+      setParticipants((curr) =>
+        curr.map((p) => {
+          if (p.id !== participantId) return p;
+          prior = p;
+          return { ...p, is_paid: paid, paid_at: paid ? new Date().toISOString() : null };
+        })
+      );
+
+      try {
+        await apiFetch(`/api/sessions/${sessionId}/participants/${participantId}`, {
+          method: 'PATCH',
+          body: JSON.stringify({ is_paid: paid }),
+        });
+      } catch (e) {
+        if (prior) {
+          const rollback = prior;
+          setParticipants((curr) => curr.map((p) => (p.id === participantId ? rollback : p)));
+        }
+        throw e;
+      }
+    },
+    [sessionId]
+  );
+
   const applyAssignmentLocally = useCallback((row: ItemAssignment) => {
     setItems((curr) => mergeAssignment(curr, row));
   }, []);
@@ -308,6 +350,7 @@ export function useSession(sessionId: string): UseSessionReturn {
     session,
     participants,
     items,
+    bankAccount,
     isLoading,
     error,
     updateSession,
@@ -320,6 +363,7 @@ export function useSession(sessionId: string): UseSessionReturn {
     claimItem,
     unclaimItem,
     setShare,
+    markPaid,
     applyAssignmentLocally,
     removeAssignmentLocally,
   };

@@ -2,13 +2,15 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
-import type { Participant } from '@/types';
+import type { Participant, SessionBankAccount } from '@/types';
+import { formatTransferBlock } from '@/lib/bankTransferText';
 
 interface ShareModalProps {
   isOpen: boolean;
   onClose: () => void;
   sessionId: string;
   participants: Participant[];
+  bankAccount?: SessionBankAccount | null;
 }
 
 export function ShareModal({
@@ -16,6 +18,7 @@ export function ShareModal({
   onClose,
   sessionId,
   participants,
+  bankAccount = null,
 }: ShareModalProps) {
   const [copied, setCopied] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'link' | 'qr' | 'participants'>('link');
@@ -191,6 +194,10 @@ export function ShareModal({
                 {participants.map((p) => {
                   const url = getParticipantUrl(p.name);
                   const copyId = `participant-${p.id}`;
+                  const transferCopyId = `transfer-${p.id}`;
+                  const transferText = bankAccount
+                    ? `Hi ${p.name}, here's your bill link: ${url}${formatTransferBlock(bankAccount)}`
+                    : null;
 
                   return (
                     <div key={p.id} className="border border-border-subtle rounded-xl p-3">
@@ -200,7 +207,7 @@ export function ShareModal({
                           onClick={() => handleCopy(url, copyId)}
                           className="text-sm font-semibold text-brand-primary hover:text-brand-primary-hover"
                         >
-                          {copied === copyId ? 'Copied!' : 'Copy'}
+                          {copied === copyId ? 'Copied!' : 'Copy link'}
                         </button>
                       </div>
                       <input
@@ -209,6 +216,23 @@ export function ShareModal({
                         readOnly
                         className="w-full px-2 py-1 bg-surface-bg border border-border-subtle rounded-lg text-xs text-text-secondary"
                       />
+                      {bankAccount && transferText && (
+                        <div className="mt-2 flex items-start justify-between gap-2">
+                          <p className="text-xs text-text-secondary leading-relaxed">
+                            Transfer to:{' '}
+                            <span className="text-text-primary font-medium">
+                              {bankAccount.bank_name} {bankAccount.bank_account_number}
+                            </span>{' '}
+                            a/n {bankAccount.bank_account_holder}
+                          </p>
+                          <button
+                            onClick={() => handleCopy(transferText, transferCopyId)}
+                            className="text-xs font-semibold text-brand-primary hover:text-brand-primary-hover whitespace-nowrap"
+                          >
+                            {copied === transferCopyId ? 'Copied!' : 'Copy w/ bank'}
+                          </button>
+                        </div>
+                      )}
                     </div>
                   );
                 })}

@@ -12,6 +12,7 @@ import { TaxServiceInput } from '@/components/TaxServiceInput';
 import { BillSummary } from '@/components/BillSummary';
 import { ParticipantView } from '@/components/ParticipantView';
 import { ShareModal } from '@/components/ShareModal';
+import { BankInfoCard } from '@/components/BankInfoCard';
 import type { Session, ItemAssignment } from '@/types';
 import type { AssignmentPayload } from '@/components/ItemCard';
 
@@ -28,6 +29,7 @@ export default function SessionPage({
     session,
     participants,
     items,
+    bankAccount,
     isLoading,
     error,
     updateSession,
@@ -40,6 +42,7 @@ export default function SessionPage({
     claimItem,
     unclaimItem,
     setShare,
+    markPaid,
     applyAssignmentLocally,
     removeAssignmentLocally,
   } = useSession(id);
@@ -234,8 +237,10 @@ export default function SessionPage({
             allParticipants={participants}
             items={items}
             bill={participantBill}
+            bankAccount={bankAccount}
             onClaimItem={handleClaimItem}
             onUpdateShare={handleUpdateShare}
+            onMarkPaid={markPaid}
           />
 
           {/* Session info footer */}
@@ -316,6 +321,7 @@ export default function SessionPage({
           onClose={() => setIsShareModalOpen(false)}
           sessionId={id}
           participants={participants}
+          bankAccount={bankAccount}
         />
 
         {/* Participant Links */}
@@ -342,8 +348,10 @@ export default function SessionPage({
 
         {/* Main content - responsive grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {/* Left column: Receipt Summary & Participants */}
+          {/* Left column: Bank info, Receipt Summary & Participants */}
           <div className="space-y-6">
+            <BankInfoCard bankAccount={bankAccount} />
+
             {/* Receipt Summary */}
             <section className="bg-surface-card rounded-2xl shadow-sm p-6">
               <h2 className="text-lg font-semibold mb-4 text-text-primary">Receipt Summary</h2>
@@ -393,6 +401,8 @@ export default function SessionPage({
                 totalAssigned={totalAssigned}
                 totalUnassigned={totalUnassigned}
                 grandTotal={session.grand_total}
+                bankAccount={bankAccount}
+                participants={participants}
               />
             </section>
           </div>
