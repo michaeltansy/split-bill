@@ -74,11 +74,11 @@ export function TaxServiceInput({
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-text-primary mb-1">
             Subtotal
           </label>
           <div className="relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-xs">IDR</span>
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary text-xs">IDR</span>
             <input
               type="number"
               step="1"
@@ -86,20 +86,20 @@ export function TaxServiceInput({
               value={subtotal}
               onChange={(e) => handleChange('subtotal', e.target.value)}
               disabled={disabled || isSaving}
-              className="w-full pl-11 pr-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+              className="w-full pl-11 pr-3 py-2 border border-border-subtle rounded-lg text-text-primary focus:outline-none focus:ring-2 focus:ring-brand-primary disabled:bg-gray-100"
             />
           </div>
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-text-primary mb-1">
             Tax
-            <span className="font-normal text-gray-500 ml-1">
+            <span className="font-normal text-text-secondary ml-1">
               ({taxPercentage.toFixed(1)}%)
             </span>
           </label>
           <div className="relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-xs">IDR</span>
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary text-xs">IDR</span>
             <input
               type="number"
               step="1"
@@ -107,20 +107,20 @@ export function TaxServiceInput({
               value={taxAmount}
               onChange={(e) => handleChange('tax', e.target.value)}
               disabled={disabled || isSaving}
-              className="w-full pl-11 pr-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+              className="w-full pl-11 pr-3 py-2 border border-border-subtle rounded-lg text-text-primary focus:outline-none focus:ring-2 focus:ring-brand-primary disabled:bg-gray-100"
             />
           </div>
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-text-primary mb-1">
             Service
-            <span className="font-normal text-gray-500 ml-1">
+            <span className="font-normal text-text-secondary ml-1">
               ({servicePercentage.toFixed(1)}%)
             </span>
           </label>
           <div className="relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-xs">IDR</span>
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary text-xs">IDR</span>
             <input
               type="number"
               step="1"
@@ -128,16 +128,16 @@ export function TaxServiceInput({
               value={serviceAmount}
               onChange={(e) => handleChange('service', e.target.value)}
               disabled={disabled || isSaving}
-              className="w-full pl-11 pr-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+              className="w-full pl-11 pr-3 py-2 border border-border-subtle rounded-lg text-text-primary focus:outline-none focus:ring-2 focus:ring-brand-primary disabled:bg-gray-100"
             />
           </div>
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-text-primary mb-1">
             Grand Total
           </label>
-          <div className="px-3 py-2 bg-gray-100 border rounded-lg font-semibold">
+          <div className="px-3 py-2 bg-surface-bg border border-border-subtle rounded-lg font-semibold text-text-primary">
             {formatIDR(grandTotal)}
           </div>
         </div>
@@ -147,7 +147,7 @@ export function TaxServiceInput({
         <button
           onClick={handleSave}
           disabled={isSaving}
-          className="w-full py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+          className="w-full py-2 bg-brand-primary text-white font-semibold rounded-xl hover:bg-brand-primary-hover disabled:opacity-50"
         >
           {isSaving ? 'Saving...' : 'Save Changes'}
         </button>

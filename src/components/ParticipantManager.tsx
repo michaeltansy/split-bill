@@ -94,35 +94,35 @@ export function ParticipantManager({
           }}
           placeholder="Enter name"
           disabled={isBusy}
-          className="flex-1 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+          className="flex-1 px-3 py-2 border border-border-subtle rounded-lg text-text-primary focus:outline-none focus:ring-2 focus:ring-brand-primary disabled:bg-gray-100"
         />
         <button
           type="submit"
           disabled={isBusy || !name.trim()}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="px-4 py-2 bg-brand-primary text-white font-semibold rounded-xl hover:bg-brand-primary-hover disabled:opacity-50 disabled:cursor-not-allowed"
         >
           Add
         </button>
       </form>
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-sm text-status-danger">{error}</p>}
 
       {pending.length > 0 && (
         <div className="space-y-2">
-          <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+          <p className="text-xs font-semibold text-text-secondary uppercase tracking-wide">
             Pending ({pending.length})
           </p>
           <ul className="space-y-2">
             {pending.map((n, i) => (
               <li
                 key={`${n}-${i}`}
-                className="flex items-center justify-between p-3 bg-yellow-50 border border-yellow-200 rounded-lg"
+                className="flex items-center justify-between p-3 bg-brand-primary-soft border border-border-subtle rounded-xl"
               >
-                <span className="font-medium">{n}</span>
+                <span className="font-medium text-text-primary">{n}</span>
                 <button
                   onClick={() => handleUnstage(i)}
                   disabled={isBusy}
-                  className="text-gray-500 hover:text-red-600 disabled:opacity-50 p-1"
+                  className="text-text-secondary hover:text-status-danger disabled:opacity-50 p-1"
                   title="Remove from pending"
                   aria-label={`Remove ${n} from pending`}
                 >
@@ -136,7 +136,7 @@ export function ParticipantManager({
           <button
             onClick={handleCommit}
             disabled={isBusy}
-            className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full px-4 py-2 bg-status-success text-white font-semibold rounded-xl hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isCommitting ? 'Updating…' : `Update (${pending.length})`}
           </button>
@@ -144,13 +144,13 @@ export function ParticipantManager({
       )}
 
       {participants.length === 0 && pending.length === 0 ? (
-        <p className="text-gray-500 text-sm py-4 text-center">
+        <p className="text-text-secondary text-sm py-4 text-center">
           No participants yet. Add someone to get started.
         </p>
       ) : participants.length > 0 ? (
         <div className="space-y-2">
           {pending.length > 0 && (
-            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+            <p className="text-xs font-semibold text-text-secondary uppercase tracking-wide">
               Confirmed ({participants.length})
             </p>
           )}
@@ -158,13 +158,13 @@ export function ParticipantManager({
             {participants.map((participant) => (
               <li
                 key={participant.id}
-                className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                className="flex items-center justify-between p-3 bg-surface-bg rounded-xl"
               >
-                <span className="font-medium">{participant.name}</span>
+                <span className="font-medium text-text-primary">{participant.name}</span>
                 <button
                   onClick={() => handleRemove(participant.id)}
                   disabled={isBusy || removingId === participant.id}
-                  className="text-red-600 hover:text-red-700 disabled:opacity-50 p-1"
+                  className="text-status-danger hover:opacity-80 disabled:opacity-50 p-1"
                   title="Remove participant"
                   aria-label={`Remove ${participant.name}`}
                 >

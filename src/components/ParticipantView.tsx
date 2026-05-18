@@ -109,19 +109,19 @@ ${itemLines}
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-blue-50 rounded-lg p-4">
-        <p className="text-sm text-blue-600">Viewing as</p>
-        <p className="text-xl font-bold text-blue-800">{participant.name}</p>
+      <div className="bg-brand-primary-soft rounded-2xl p-4">
+        <p className="text-sm text-text-secondary">Viewing as</p>
+        <p className="text-xl font-bold text-text-primary">{participant.name}</p>
       </div>
 
       {/* My Bill Summary */}
       {bill && (
-        <section className="bg-white rounded-lg shadow-sm p-6">
+        <section className="bg-surface-card rounded-2xl shadow-sm p-6">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold">My Bill</h2>
+            <h2 className="text-lg font-semibold text-text-primary">My Bill</h2>
             <button
               onClick={handleCopyBill}
-              className="text-sm text-blue-600 hover:text-blue-700"
+              className="text-sm font-semibold text-brand-primary hover:text-brand-primary-hover"
             >
               {copiedBill ? '✓ Copied!' : 'Copy'}
             </button>
@@ -130,33 +130,33 @@ ${itemLines}
           <div className="space-y-2 text-sm">
             {bill.items.map((pItem) => (
               <div key={pItem.item.id} className="flex justify-between gap-2">
-                <span className="text-gray-600 truncate min-w-0">
+                <span className="text-text-primary truncate min-w-0">
                   {pItem.item.name}
                   {pItem.share_percentage < 100 && (
-                    <span className="text-gray-400 ml-1">
+                    <span className="text-text-secondary ml-1">
                       ({formatNumber(pItem.share_percentage)}%)
                     </span>
                   )}
                 </span>
-                <span className="shrink-0">{formatIDR(pItem.share_amount)}</span>
+                <span className="shrink-0 text-text-primary">{formatIDR(pItem.share_amount)}</span>
               </div>
             ))}
           </div>
 
-          <div className="border-t mt-3 pt-3 space-y-1 text-sm">
-            <div className="flex justify-between text-gray-500 gap-2">
-              <span>Subtotal</span>
-              <span className="shrink-0">{formatIDR(bill.subtotal)}</span>
+          <div className="border-t border-border-subtle mt-3 pt-3 space-y-1 text-sm">
+            <div className="flex justify-between gap-2">
+              <span className="text-text-secondary">Subtotal</span>
+              <span className="shrink-0 text-text-primary">{formatIDR(bill.subtotal)}</span>
             </div>
-            <div className="flex justify-between text-gray-500 gap-2">
-              <span>Tax</span>
-              <span className="shrink-0">{formatIDR(bill.tax_share)}</span>
+            <div className="flex justify-between gap-2">
+              <span className="text-text-secondary">Tax</span>
+              <span className="shrink-0 text-text-primary">{formatIDR(bill.tax_share)}</span>
             </div>
-            <div className="flex justify-between text-gray-500 gap-2">
-              <span>Service</span>
-              <span className="shrink-0">{formatIDR(bill.service_share)}</span>
+            <div className="flex justify-between gap-2">
+              <span className="text-text-secondary">Service</span>
+              <span className="shrink-0 text-text-primary">{formatIDR(bill.service_share)}</span>
             </div>
-            <div className="flex justify-between font-bold text-base sm:text-lg pt-2 border-t gap-2">
+            <div className="flex justify-between font-bold text-base sm:text-lg pt-2 border-t border-border-subtle gap-2 text-text-primary">
               <span>Total</span>
               <span className="shrink-0">{formatIDR(bill.total)}</span>
             </div>
@@ -166,24 +166,24 @@ ${itemLines}
 
       {/* My Items */}
       {myItems.length > 0 && (
-        <section className="bg-white rounded-lg shadow-sm p-6">
-          <h2 className="text-lg font-semibold mb-4">My Items</h2>
+        <section className="bg-surface-card rounded-2xl shadow-sm p-6">
+          <h2 className="text-lg font-semibold mb-4 text-text-primary">My Items</h2>
           <div className="space-y-3">
             {myItems.map((item) => (
               <div
                 key={item.id}
-                className="flex items-center justify-between p-3 bg-green-50 rounded-lg gap-3"
+                className="flex items-center justify-between p-3 bg-brand-primary-soft rounded-xl gap-3"
               >
                 <div className="min-w-0 flex-1">
-                  <p className="font-medium truncate">{item.name}</p>
-                  <p className="text-sm text-gray-500">
+                  <p className="font-medium truncate text-text-primary">{item.name}</p>
+                  <p className="text-sm text-text-secondary">
                     {formatIDR(item.price * item.quantity)}
                   </p>
                 </div>
                 <button
                   onClick={() => handleClaim(item.id, false)}
                   disabled={claimingId === item.id}
-                  className="text-sm text-red-600 hover:text-red-700 disabled:opacity-50 shrink-0"
+                  className="text-sm font-medium text-status-danger hover:opacity-80 disabled:opacity-50 shrink-0"
                 >
                   {claimingId === item.id ? '...' : 'Remove'}
                 </button>
@@ -195,29 +195,29 @@ ${itemLines}
 
       {/* Shared Items */}
       {sharedItems.length > 0 && (
-        <section className="bg-white rounded-lg shadow-sm p-6">
-          <h2 className="text-lg font-semibold mb-4">Shared Items</h2>
+        <section className="bg-surface-card rounded-2xl shadow-sm p-6">
+          <h2 className="text-lg font-semibold mb-4 text-text-primary">Shared Items</h2>
           <div className="space-y-3">
             {sharedItems.map((item) => (
               <div
                 key={item.id}
-                className="p-3 bg-yellow-50 rounded-lg"
+                className="p-3 bg-surface-bg border border-border-subtle rounded-xl"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">
-                    <p className="font-medium truncate">{item.name}</p>
-                    <p className="text-sm text-gray-500">
+                    <p className="font-medium truncate text-text-primary">{item.name}</p>
+                    <p className="text-sm text-text-secondary">
                       {formatIDR(item.price * item.quantity)} total
                     </p>
-                    <p className="text-xs text-gray-400 break-words">
+                    <p className="text-xs text-text-secondary break-words">
                       Shared with: {getItemSharedWith(item)}
                     </p>
                   </div>
                   <div className="text-right shrink-0">
-                    <p className="text-sm font-medium">
+                    <p className="text-sm font-medium text-text-primary">
                       My share: {formatNumber(getMyPercentage(item))}%
                     </p>
-                    <p className="text-sm text-gray-600">
+                    <p className="text-sm text-text-primary">
                       {formatIDR((item.price * item.quantity * getMyPercentage(item)) / 100)}
                     </p>
                   </div>
@@ -230,11 +230,11 @@ ${itemLines}
 
       {/* Unclaimed Items */}
       {unclaimedItems.length > 0 && (
-        <section className="bg-white rounded-lg shadow-sm p-6">
-          <h2 className="text-lg font-semibold mb-4">
+        <section className="bg-surface-card rounded-2xl shadow-sm p-6">
+          <h2 className="text-lg font-semibold mb-4 text-text-primary">
             Unclaimed Items ({unclaimedItems.length})
           </h2>
-          <p className="text-sm text-gray-500 mb-4">
+          <p className="text-sm text-text-secondary mb-4">
             Click an item to claim it as yours
           </p>
           <div className="space-y-2">
@@ -243,23 +243,23 @@ ${itemLines}
                 key={item.id}
                 onClick={() => handleClaim(item.id, true)}
                 disabled={claimingId === item.id}
-                className="w-full flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 disabled:opacity-50 text-left gap-3"
+                className="w-full flex items-center justify-between p-3 border border-border-subtle rounded-xl hover:bg-brand-primary-soft hover:border-brand-primary disabled:opacity-50 text-left gap-3 transition-colors"
               >
                 <div className="min-w-0 flex-1">
-                  <p className="font-medium truncate">{item.name}</p>
+                  <p className="font-medium truncate text-text-primary">{item.name}</p>
                   {item.quantity > 1 && (
-                    <p className="text-xs text-gray-400">Qty: {item.quantity}</p>
+                    <p className="text-xs text-text-secondary">Qty: {item.quantity}</p>
                   )}
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
-                  <span className="font-medium">
+                  <span className="font-medium text-text-primary">
                     {formatIDR(item.price * item.quantity)}
                   </span>
                   {claimingId === item.id ? (
-                    <span className="text-gray-400">...</span>
+                    <span className="text-text-secondary">...</span>
                   ) : (
                     <svg
-                      className="w-5 h-5 text-green-600"
+                      className="w-5 h-5 text-brand-primary"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -280,22 +280,22 @@ ${itemLines}
       )}
 
       {/* Receipt Summary */}
-      <section className="bg-white rounded-lg shadow-sm p-6">
-        <h2 className="text-lg font-semibold mb-4">Receipt Summary</h2>
+      <section className="bg-surface-card rounded-2xl shadow-sm p-6">
+        <h2 className="text-lg font-semibold mb-4 text-text-primary">Receipt Summary</h2>
         <div className="space-y-2 text-sm">
           <div className="flex justify-between gap-2">
-            <span className="text-gray-500">Subtotal</span>
-            <span className="shrink-0">{formatIDR(session.subtotal)}</span>
+            <span className="text-text-secondary">Subtotal</span>
+            <span className="shrink-0 text-text-primary">{formatIDR(session.subtotal)}</span>
           </div>
           <div className="flex justify-between gap-2">
-            <span className="text-gray-500">Tax ({formatNumber(session.tax_percentage)}%)</span>
-            <span className="shrink-0">{formatIDR(session.tax_amount)}</span>
+            <span className="text-text-secondary">Tax ({formatNumber(session.tax_percentage)}%)</span>
+            <span className="shrink-0 text-text-primary">{formatIDR(session.tax_amount)}</span>
           </div>
           <div className="flex justify-between gap-2">
-            <span className="text-gray-500">Service ({formatNumber(session.service_percentage)}%)</span>
-            <span className="shrink-0">{formatIDR(session.service_amount)}</span>
+            <span className="text-text-secondary">Service ({formatNumber(session.service_percentage)}%)</span>
+            <span className="shrink-0 text-text-primary">{formatIDR(session.service_amount)}</span>
           </div>
-          <div className="flex justify-between font-bold pt-2 border-t gap-2">
+          <div className="flex justify-between font-bold pt-2 border-t border-border-subtle gap-2 text-text-primary">
             <span>Grand Total</span>
             <span className="shrink-0">{formatIDR(session.grand_total)}</span>
           </div>

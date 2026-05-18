@@ -44,7 +44,7 @@ ${itemDetails}
 
   if (bills.length === 0) {
     return (
-      <div className="text-center py-8 text-gray-500">
+      <div className="text-center py-8 text-text-secondary">
         <p>No bills to display yet.</p>
         <p className="text-sm mt-1">Add participants and assign items to see the breakdown.</p>
       </div>
@@ -54,19 +54,19 @@ ${itemDetails}
   return (
     <div className="space-y-4">
       {/* Summary header */}
-      <div className="bg-gray-50 rounded-lg p-4">
+      <div className="bg-surface-bg rounded-2xl p-4">
         <div className="flex justify-between items-center gap-3">
-          <span className="font-medium">Grand Total</span>
-          <span className="text-lg sm:text-xl font-bold break-words text-right">{formatIDR(grandTotal)}</span>
+          <span className="font-medium text-text-primary">Grand Total</span>
+          <span className="text-lg sm:text-xl font-bold text-text-primary break-words text-right">{formatIDR(grandTotal)}</span>
         </div>
         <div className="flex flex-wrap justify-between text-sm mt-2 gap-x-3 gap-y-1">
-          <span className="text-green-600">Assigned: {formatIDR(totalAssigned)}</span>
+          <span className="text-status-success font-medium">Assigned: {formatIDR(totalAssigned)}</span>
           {totalUnassigned > 0 && (
-            <span className="text-orange-600">Unassigned: {formatIDR(totalUnassigned)}</span>
+            <span className="text-status-danger font-medium">Unassigned: {formatIDR(totalUnassigned)}</span>
           )}
         </div>
         {totalUnassigned > 0 && (
-          <p className="text-xs text-orange-600 mt-2">
+          <p className="text-xs text-status-danger mt-2">
             Some items haven&apos;t been assigned to participants yet.
           </p>
         )}
@@ -81,23 +81,23 @@ ${itemDetails}
           return (
             <div
               key={bill.participant.id}
-              className="border rounded-lg overflow-hidden"
+              className="border border-border-subtle rounded-2xl overflow-hidden"
             >
               {/* Header - always visible */}
               <div
-                className="flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50 gap-3"
+                className="flex items-center justify-between p-4 cursor-pointer hover:bg-surface-bg gap-3"
                 onClick={() => setExpandedId(isExpanded ? null : bill.participant.id)}
               >
                 <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-8 h-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center font-medium shrink-0">
+                  <div className="w-8 h-8 bg-brand-primary-soft text-brand-primary rounded-full flex items-center justify-center font-semibold shrink-0">
                     {bill.participant.name.charAt(0).toUpperCase()}
                   </div>
-                  <span className="font-medium truncate min-w-0">{bill.participant.name}</span>
+                  <span className="font-medium text-text-primary truncate min-w-0">{bill.participant.name}</span>
                 </div>
                 <div className="flex items-center gap-3 shrink-0">
-                  <span className="text-base sm:text-lg font-semibold">{formatIDR(bill.total)}</span>
+                  <span className="text-base sm:text-lg font-semibold text-text-primary">{formatIDR(bill.total)}</span>
                   <svg
-                    className={`w-5 h-5 text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                    className={`w-5 h-5 text-text-secondary transition-transform ${isExpanded ? 'rotate-180' : ''}`}
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -109,42 +109,42 @@ ${itemDetails}
 
               {/* Expanded details */}
               {isExpanded && (
-                <div className="border-t px-4 py-3 bg-gray-50">
+                <div className="border-t border-border-subtle px-4 py-3 bg-surface-bg">
                   {/* Items breakdown */}
                   <div className="space-y-1 mb-3">
-                    <p className="text-xs font-medium text-gray-500 uppercase">Items</p>
+                    <p className="text-xs font-semibold text-text-secondary uppercase">Items</p>
                     {bill.items.map((pItem) => {
                       return (
                         <div key={pItem.item.id} className="flex justify-between text-sm gap-2">
-                          <span className="text-gray-600 truncate min-w-0">
+                          <span className="text-text-primary truncate min-w-0">
                             {pItem.item.name}
                             {pItem.share_percentage < 100 && (
-                              <span className="text-gray-400 ml-1">
+                              <span className="text-text-secondary ml-1">
                                 ({formatNumber(pItem.share_percentage)}%)
                               </span>
                             )}
                           </span>
-                          <span className="shrink-0">{formatIDR(pItem.share_amount)}</span>
+                          <span className="shrink-0 text-text-primary">{formatIDR(pItem.share_amount)}</span>
                         </div>
                       );
                     })}
                   </div>
 
                   {/* Subtotals */}
-                  <div className="border-t pt-2 space-y-1">
+                  <div className="border-t border-border-subtle pt-2 space-y-1">
                     <div className="flex justify-between text-sm gap-2">
-                      <span className="text-gray-500">Items Subtotal</span>
-                      <span className="shrink-0">{formatIDR(bill.subtotal)}</span>
+                      <span className="text-text-secondary">Items Subtotal</span>
+                      <span className="shrink-0 text-text-primary">{formatIDR(bill.subtotal)}</span>
                     </div>
                     <div className="flex justify-between text-sm gap-2">
-                      <span className="text-gray-500">Tax</span>
-                      <span className="shrink-0">{formatIDR(bill.tax_share)}</span>
+                      <span className="text-text-secondary">Tax</span>
+                      <span className="shrink-0 text-text-primary">{formatIDR(bill.tax_share)}</span>
                     </div>
                     <div className="flex justify-between text-sm gap-2">
-                      <span className="text-gray-500">Service</span>
-                      <span className="shrink-0">{formatIDR(bill.service_share)}</span>
+                      <span className="text-text-secondary">Service</span>
+                      <span className="shrink-0 text-text-primary">{formatIDR(bill.service_share)}</span>
                     </div>
-                    <div className="flex justify-between font-medium pt-1 border-t gap-2">
+                    <div className="flex justify-between font-semibold pt-1 border-t border-border-subtle gap-2 text-text-primary">
                       <span>Total</span>
                       <span className="shrink-0">{formatIDR(bill.total)}</span>
                     </div>
@@ -156,7 +156,7 @@ ${itemDetails}
                       e.stopPropagation();
                       handleCopyBill(bill);
                     }}
-                    className="mt-3 w-full py-2 text-sm border rounded hover:bg-white transition-colors"
+                    className="mt-3 w-full py-2 text-sm font-medium border border-border-subtle bg-white text-text-primary rounded-xl hover:bg-brand-primary-soft hover:border-brand-primary transition-colors"
                   >
                     {isCopied ? '✓ Copied!' : 'Copy Bill Details'}
                   </button>

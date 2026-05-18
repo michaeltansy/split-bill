@@ -21,7 +21,6 @@ body {
 body {
   color: var(--foreground);
   background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
 }
 
 @keyframes slide-in {
@@ -66,7 +65,7 @@ textarea {
 
 /* Better focus states */
 *:focus-visible {
-  outline: 2px solid #2563eb;
+  outline: 2px solid #00AED6;
   outline-offset: 2px;
 }
 
