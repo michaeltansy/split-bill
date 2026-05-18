@@ -18,6 +18,27 @@ export interface Participant {
   session_id: string;
   name: string;
   created_at: string;
+  is_paid: boolean;
+  paid_at: string | null;
+}
+
+export type BankCode = 'BCA' | 'Jago' | 'GoPay' | 'Other';
+
+export interface SessionBankAccount {
+  id: string;
+  session_id: string;
+  bank_name: string;
+  bank_account_number: string;
+  bank_account_holder: string;
+  display_order: number;
+  created_at: string;
+}
+
+// Convenience shape used by forms and the read-only card.
+export interface BankInfoInput {
+  bank_name: string;
+  bank_account_number: string;
+  bank_account_holder: string;
 }
 
 export interface Item {
@@ -51,6 +72,8 @@ export interface SessionFull {
   session: Session;
   participants: Participant[];
   items: ItemWithAssignments[];
+  // v1: 0 or 1 bank account per session. Future multi-bank flip is a type change to `SessionBankAccount[]`.
+  bank_account: SessionBankAccount | null;
 }
 
 // Bill Calculation Types
@@ -81,6 +104,7 @@ export interface CreateSessionRequest {
   tax_percentage?: number;
   service_percentage?: number;
   receipt_image_url?: string;
+  bank_account?: BankInfoInput | null;
 }
 
 export interface UpdateAssignmentsRequest {

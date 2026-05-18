@@ -2,10 +2,33 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase';
 import type { CreateSessionRequest } from '@/types';
 
+const ACCOUNT_NUMBER_RE = /^[0-9]{8,20}$/;
+
 export async function POST(request: NextRequest) {
   try {
     const supabase = createServerClient();
     const body: CreateSessionRequest = await request.json();
+
+    // Validate bank_account shape if present. All-or-nothing falls out of the
+    // typed object — the client either sends a complete object or null/omits it.
+    if (body.bank_account != null) {
+      const ba = body.bank_account;
+      if (
+        typeof ba.bank_name !== 'string' ||
+        typeof ba.bank_account_number !== 'string' ||
+        typeof ba.bank_account_holder !== 'string' ||
+        ba.bank_name.trim().length === 0 ||
+        ba.bank_name.length > 30 ||
+        !ACCOUNT_NUMBER_RE.test(ba.bank_account_number) ||
+        ba.bank_account_holder.trim().length === 0 ||
+        ba.bank_account_holder.length > 80
+      ) {
+        return NextResponse.json(
+          { error: 'Invalid bank_account payload', code: 'INVALID_INPUT' },
+          { status: 400 }
+        );
+      }
+    }
 
     const { data: session, error: sessionError } = await supabase
       .from('sessions')
@@ -21,11 +44,32 @@ export async function POST(request: NextRequest) {
       .select()
       .single();
 
-    if (sessionError) {
+    if (sessionError || !session) {
       return NextResponse.json(
-        { error: sessionError.message, code: 'INVALID_INPUT' },
+        { error: sessionError?.message ?? 'Failed to create session', code: 'INVALID_INPUT' },
         { status: 400 }
       );
+    }
+
+    if (body.bank_account) {
+      const { error: bankError } = await supabase
+        .from('session_bank_accounts')
+        .insert({
+          session_id: session.id,
+          bank_name: body.bank_account.bank_name.trim(),
+          bank_account_number: body.bank_account.bank_account_number,
+          bank_account_holder: body.bank_account.bank_account_holder.trim(),
+        });
+
+      if (bankError) {
+        // Roll back the session so we never leave an orphaned session that
+        // was supposed to carry bank info.
+        await supabase.from('sessions').delete().eq('id', session.id);
+        return NextResponse.json(
+          { error: bankError.message, code: 'INVALID_INPUT' },
+          { status: 400 }
+        );
+      }
     }
 
     return NextResponse.json(session, { status: 201 });

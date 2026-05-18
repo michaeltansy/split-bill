@@ -1,14 +1,17 @@
 'use client';
 
 import { useState } from 'react';
-import type { ParticipantBill } from '@/types';
+import type { ParticipantBill, Participant, SessionBankAccount } from '@/types';
 import { formatIDR, formatNumber } from '@/lib/format';
+import { formatTransferBlock } from '@/lib/bankTransferText';
 
 interface BillSummaryProps {
   bills: ParticipantBill[];
   totalAssigned: number;
   totalUnassigned: number;
   grandTotal: number;
+  bankAccount?: SessionBankAccount | null;
+  participants?: Participant[];
 }
 
 export function BillSummary({
@@ -16,6 +19,8 @@ export function BillSummary({
   totalAssigned,
   totalUnassigned,
   grandTotal,
+  bankAccount = null,
+  participants = [],
 }: BillSummaryProps) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -31,7 +36,7 @@ ${itemDetails}
   Tax: ${formatIDR(bill.tax_share)}
   Service: ${formatIDR(bill.service_share)}
   ─────────────
-  Total: ${formatIDR(bill.total)}`;
+  Total: ${formatIDR(bill.total)}${formatTransferBlock(bankAccount)}`;
 
     try {
       await navigator.clipboard.writeText(text);
@@ -78,6 +83,10 @@ ${itemDetails}
           const isExpanded = expandedId === bill.participant.id;
           const isCopied = copiedId === bill.participant.id;
 
+          const participantRow = participants.find((p) => p.id === bill.participant.id);
+          const isPaid = participantRow?.is_paid ?? false;
+          const paidAt = participantRow?.paid_at ?? null;
+
           return (
             <div
               key={bill.participant.id}
@@ -92,7 +101,19 @@ ${itemDetails}
                   <div className="w-8 h-8 bg-brand-primary-soft text-brand-primary rounded-full flex items-center justify-center font-semibold shrink-0">
                     {bill.participant.name.charAt(0).toUpperCase()}
                   </div>
-                  <span className="font-medium text-text-primary truncate min-w-0">{bill.participant.name}</span>
+                  <div className="min-w-0 flex flex-col">
+                    <span className="font-medium text-text-primary truncate">{bill.participant.name}</span>
+                    {isPaid ? (
+                      <span
+                        title={paidAt ? `Paid on ${new Date(paidAt).toLocaleString()}` : undefined}
+                        className="text-xs font-semibold text-status-success"
+                      >
+                        Paid ✓
+                      </span>
+                    ) : (
+                      <span className="text-xs text-text-secondary">Unpaid</span>
+                    )}
+                  </div>
                 </div>
                 <div className="flex items-center gap-3 shrink-0">
                   <span className="text-base sm:text-lg font-semibold text-text-primary">{formatIDR(bill.total)}</span>

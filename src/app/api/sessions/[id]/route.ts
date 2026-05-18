@@ -59,10 +59,20 @@ export async function GET(
       assignments: assignments.filter((a) => a.item_id === item.id),
     }));
 
+    // v1: at most one bank account per session. Future multi-bank lifts the UNIQUE
+    // constraint and switches this to an array; rendering callers go through
+    // BankInfoCard only.
+    const { data: bankAccount } = await supabase
+      .from('session_bank_accounts')
+      .select('*')
+      .eq('session_id', id)
+      .maybeSingle();
+
     return NextResponse.json({
       session,
       participants: participants || [],
       items: itemsWithAssignments,
+      bank_account: bankAccount ?? null,
     });
   } catch (error) {
     return NextResponse.json(

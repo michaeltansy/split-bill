@@ -1,10 +1,12 @@
 'use client';
 
-import { useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/components/Toast';
+import { BankInfoForm } from '@/components/BankInfoForm';
 import { useBillScan } from '@/hooks/useBillScan';
 import { formatIDR } from '@/lib/format';
+import type { BankInfoInput } from '@/types';
 
 const OCR_ENABLED = process.env.NEXT_PUBLIC_OCR_ENABLED === 'true';
 
@@ -26,7 +28,12 @@ export default function Home() {
   const [items, setItems] = useState<DraftItem[]>(() => [newDraftItem()]);
   const [taxAmount, setTaxAmount] = useState('');
   const [serviceAmount, setServiceAmount] = useState('');
+  const [bankAccount, setBankAccount] = useState<BankInfoInput | null>(null);
   const [isCreating, setIsCreating] = useState(false);
+
+  const handleBankChange = useCallback((value: BankInfoInput | null) => {
+    setBankAccount(value);
+  }, []);
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const { scan, isScanning, cooldownRemaining, isCoolingDown } = useBillScan();
@@ -116,6 +123,7 @@ export default function Home() {
           grand_total: grandTotal,
           tax_percentage: Math.round(taxPct * 100) / 100,
           service_percentage: Math.round(servicePct * 100) / 100,
+          bank_account: bankAccount,
         }),
       });
 
@@ -291,6 +299,11 @@ export default function Home() {
               </div>
             </div>
           </div>
+        </section>
+
+        <section className="bg-surface-card rounded-2xl shadow-sm p-6 mb-6">
+          <h2 className="text-lg font-semibold mb-4 text-text-primary">Payment Destination</h2>
+          <BankInfoForm disabled={isCreating} onChange={handleBankChange} />
         </section>
 
         <section className="bg-surface-card rounded-2xl shadow-sm p-6 mb-6">

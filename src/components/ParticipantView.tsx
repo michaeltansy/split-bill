@@ -1,8 +1,17 @@
 'use client';
 
 import { useState, useCallback, useMemo } from 'react';
-import type { Session, Participant, ItemWithAssignments, ParticipantBill } from '@/types';
+import type {
+  Session,
+  Participant,
+  ItemWithAssignments,
+  ParticipantBill,
+  SessionBankAccount,
+} from '@/types';
 import { formatIDR, formatNumber } from '@/lib/format';
+import { formatTransferBlock } from '@/lib/bankTransferText';
+import { BankInfoCard } from '@/components/BankInfoCard';
+import { MarkAsPaidButton } from '@/components/MarkAsPaidButton';
 
 interface ParticipantViewProps {
   session: Session;
@@ -10,8 +19,10 @@ interface ParticipantViewProps {
   allParticipants: Participant[];
   items: ItemWithAssignments[];
   bill: ParticipantBill | null;
+  bankAccount: SessionBankAccount | null;
   onClaimItem: (itemId: string, claim: boolean) => Promise<void>;
   onUpdateShare: (itemId: string, percentage: number) => Promise<void>;
+  onMarkPaid: (participantId: string, paid: boolean) => Promise<void>;
 }
 
 export function ParticipantView({
@@ -20,8 +31,10 @@ export function ParticipantView({
   allParticipants,
   items,
   bill,
+  bankAccount,
   onClaimItem,
   onUpdateShare,
+  onMarkPaid,
 }: ParticipantViewProps) {
   const [claimingId, setClaimingId] = useState<string | null>(null);
   const [copiedBill, setCopiedBill] = useState(false);
@@ -80,7 +93,7 @@ ${itemLines}
   Tax: ${formatIDR(bill.tax_share)}
   Service: ${formatIDR(bill.service_share)}
   ─────────────
-  Total: ${formatIDR(bill.total)}`;
+  Total: ${formatIDR(bill.total)}${formatTransferBlock(bankAccount)}`;
 
     try {
       await navigator.clipboard.writeText(text);
@@ -89,7 +102,7 @@ ${itemLines}
     } catch (err) {
       console.error('Failed to copy:', err);
     }
-  }, [bill, participant.name]);
+  }, [bill, participant.name, bankAccount]);
 
   const getItemSharedWith = (item: ItemWithAssignments) => {
     return item.assignments
@@ -113,6 +126,8 @@ ${itemLines}
         <p className="text-sm text-text-secondary">Viewing as</p>
         <p className="text-xl font-bold text-text-primary">{participant.name}</p>
       </div>
+
+      <BankInfoCard bankAccount={bankAccount} />
 
       {/* My Bill Summary */}
       {bill && (
@@ -163,6 +178,8 @@ ${itemLines}
           </div>
         </section>
       )}
+
+      <MarkAsPaidButton participant={participant} onMarkPaid={onMarkPaid} />
 
       {/* My Items */}
       {myItems.length > 0 && (
