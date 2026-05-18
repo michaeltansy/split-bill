@@ -180,35 +180,35 @@ export function ItemCard({
 
   if (isEditing) {
     return (
-      <div className="border rounded-lg p-4 bg-blue-50">
+      <div className="border border-border-subtle rounded-2xl p-4 bg-brand-primary-soft">
         <div className="space-y-3">
           <input
             type="text"
             value={editName}
             onChange={(e) => setEditName(e.target.value)}
             placeholder="Item name"
-            className="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 border border-border-subtle bg-white rounded-lg text-text-primary focus:outline-none focus:ring-2 focus:ring-brand-primary"
           />
           <div className="flex gap-2">
             <div className="flex-1">
-              <label className="text-xs text-gray-500">Price</label>
+              <label className="text-xs font-medium text-text-primary">Price</label>
               <input
                 type="number"
                 step="0.01"
                 min="0"
                 value={editPrice}
                 onChange={(e) => setEditPrice(e.target.value)}
-                className="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-border-subtle bg-white rounded-lg text-text-primary focus:outline-none focus:ring-2 focus:ring-brand-primary"
               />
             </div>
             <div className="w-20">
-              <label className="text-xs text-gray-500">Qty</label>
+              <label className="text-xs font-medium text-text-primary">Qty</label>
               <input
                 type="number"
                 min="1"
                 value={editQuantity}
                 onChange={(e) => setEditQuantity(e.target.value)}
-                className="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-border-subtle bg-white rounded-lg text-text-primary focus:outline-none focus:ring-2 focus:ring-brand-primary"
               />
             </div>
           </div>
@@ -216,7 +216,7 @@ export function ItemCard({
             <button
               onClick={handleSaveEdit}
               disabled={isSaving}
-              className="flex-1 px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+              className="flex-1 px-3 py-2 bg-brand-primary text-white font-semibold rounded-xl hover:bg-brand-primary-hover disabled:opacity-50"
             >
               {isSaving ? 'Saving...' : 'Save'}
             </button>
@@ -228,7 +228,7 @@ export function ItemCard({
                 setEditQuantity(item.quantity.toString());
               }}
               disabled={isSaving}
-              className="px-3 py-2 border rounded hover:bg-gray-100"
+              className="px-3 py-2 border border-border-subtle text-text-primary rounded-xl hover:bg-gray-100"
             >
               Cancel
             </button>
@@ -240,26 +240,26 @@ export function ItemCard({
 
   if (isAssigning) {
     return (
-      <div className="border rounded-lg p-4 bg-green-50">
+      <div className="border border-border-subtle rounded-2xl p-4 bg-brand-primary-soft">
         <div className="mb-3 flex items-baseline gap-2 min-w-0">
-          <span className="font-medium truncate min-w-0">{item.name}</span>
-          <span className="text-gray-500 shrink-0">{formatIDR(item.price)}</span>
+          <span className="font-medium text-text-primary truncate min-w-0">{item.name}</span>
+          <span className="text-text-secondary shrink-0">{formatIDR(item.price)}</span>
         </div>
 
         <div className="mb-3">
           <div className="flex flex-wrap gap-2 mb-2">
             <button
               onClick={() => setSplitType('equal')}
-              className={`px-3 py-1 text-sm rounded ${
-                splitType === 'equal' ? 'bg-green-600 text-white' : 'bg-gray-200'
+              className={`px-3 py-1 text-sm rounded-full font-medium ${
+                splitType === 'equal' ? 'bg-brand-primary text-white' : 'bg-white text-text-primary border border-border-subtle'
               }`}
             >
               Equal Split
             </button>
             <button
               onClick={() => setSplitType('percentage')}
-              className={`px-3 py-1 text-sm rounded ${
-                splitType === 'percentage' ? 'bg-green-600 text-white' : 'bg-gray-200'
+              className={`px-3 py-1 text-sm rounded-full font-medium ${
+                splitType === 'percentage' ? 'bg-brand-primary text-white' : 'bg-white text-text-primary border border-border-subtle'
               }`}
             >
               Custom %
@@ -268,16 +268,16 @@ export function ItemCard({
               onClick={() => setSplitType('unit')}
               disabled={item.quantity < 2}
               title={item.quantity < 2 ? 'Item has only 1 unit — use Equal or %' : undefined}
-              className={`px-3 py-1 text-sm rounded disabled:opacity-50 disabled:cursor-not-allowed ${
-                splitType === 'unit' ? 'bg-green-600 text-white' : 'bg-gray-200'
+              className={`px-3 py-1 text-sm rounded-full font-medium disabled:opacity-50 disabled:cursor-not-allowed ${
+                splitType === 'unit' ? 'bg-brand-primary text-white' : 'bg-white text-text-primary border border-border-subtle'
               }`}
             >
               By Unit
             </button>
           </div>
           {splitType === 'unit' && (
-            <p className="text-xs text-gray-600">
-              Item has <span className="font-medium">{item.quantity}</span> units. Each person enters how many they took.
+            <p className="text-xs text-text-secondary">
+              Item has <span className="font-medium text-text-primary">{item.quantity}</span> units. Each person enters how many they took.
             </p>
           )}
         </div>
@@ -292,7 +292,7 @@ export function ItemCard({
                 onChange={() => handleToggleParticipant(p.id)}
                 className="w-4 h-4"
               />
-              <label htmlFor={`assign-${item.id}-${p.id}`} className="flex-1 min-w-0 truncate">
+              <label htmlFor={`assign-${item.id}-${p.id}`} className="flex-1 min-w-0 truncate text-text-primary">
                 {p.name}
               </label>
               {splitType === 'percentage' && selectedParticipants.has(p.id) && (
@@ -305,10 +305,10 @@ export function ItemCard({
                     onChange={(e) =>
                       setPercentages({ ...percentages, [p.id]: parseFloat(e.target.value) || 0 })
                     }
-                    className="w-16 px-2 py-1 border rounded text-sm"
+                    className="w-16 px-2 py-1 border border-border-subtle bg-white rounded-lg text-sm text-text-primary"
                     placeholder="%"
                   />
-                  <span className="text-xs text-gray-500">%</span>
+                  <span className="text-xs text-text-secondary">%</span>
                 </div>
               )}
               {splitType === 'unit' && selectedParticipants.has(p.id) && (
@@ -325,10 +325,10 @@ export function ItemCard({
                         [p.id]: Math.max(0, parseInt(e.target.value, 10) || 0),
                       })
                     }
-                    className="w-16 px-2 py-1 border rounded text-sm"
+                    className="w-16 px-2 py-1 border border-border-subtle bg-white rounded-lg text-sm text-text-primary"
                     placeholder="qty"
                   />
-                  <span className="text-xs text-gray-500">units</span>
+                  <span className="text-xs text-text-secondary">units</span>
                 </div>
               )}
             </div>
@@ -336,14 +336,14 @@ export function ItemCard({
         </div>
 
         {splitType === 'percentage' && selectedParticipants.size > 0 && (
-          <p className={`text-sm mb-3 ${Math.abs(totalPercentage - 100) < 0.01 ? 'text-green-600' : 'text-red-600'}`}>
+          <p className={`text-sm mb-3 font-medium ${Math.abs(totalPercentage - 100) < 0.01 ? 'text-status-success' : 'text-status-danger'}`}>
             Total: {totalPercentage.toFixed(1)}%
             {Math.abs(totalPercentage - 100) >= 0.01 && ' (must equal 100%)'}
           </p>
         )}
 
         {splitType === 'unit' && selectedParticipants.size > 0 && (
-          <p className={`text-sm mb-3 ${unitsBalanced ? 'text-green-600' : 'text-red-600'}`}>
+          <p className={`text-sm mb-3 font-medium ${unitsBalanced ? 'text-status-success' : 'text-status-danger'}`}>
             Total: {totalUnits} of {item.quantity} unit{item.quantity === 1 ? '' : 's'}
             {!unitsBalanced && ` (must equal ${item.quantity})`}
           </p>
@@ -358,14 +358,14 @@ export function ItemCard({
               (splitType === 'percentage' && Math.abs(totalPercentage - 100) >= 0.01) ||
               (splitType === 'unit' && !unitsBalanced)
             }
-            className="flex-1 px-3 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
+            className="flex-1 px-3 py-2 bg-brand-primary text-white font-semibold rounded-xl hover:bg-brand-primary-hover disabled:opacity-50"
           >
             {isSaving ? 'Saving...' : 'Save Assignment'}
           </button>
           <button
             onClick={() => setIsAssigning(false)}
             disabled={isSaving}
-            className="px-3 py-2 border rounded hover:bg-gray-100"
+            className="px-3 py-2 border border-border-subtle text-text-primary rounded-xl hover:bg-gray-100"
           >
             Cancel
           </button>
@@ -375,27 +375,27 @@ export function ItemCard({
   }
 
   return (
-    <div className="border rounded-lg p-4 hover:border-gray-400 transition-colors">
+    <div className="border border-border-subtle rounded-2xl p-4 hover:border-brand-primary transition-colors">
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 min-w-0">
-            <span className="font-medium truncate min-w-0">{item.name}</span>
+            <span className="font-medium text-text-primary truncate min-w-0">{item.name}</span>
             {item.quantity > 1 && (
-              <span className="text-sm text-gray-500 shrink-0">x{item.quantity}</span>
+              <span className="text-sm text-text-secondary shrink-0">x{item.quantity}</span>
             )}
           </div>
-          <div className="text-base sm:text-lg font-semibold text-gray-800 break-words">
+          <div className="text-base sm:text-lg font-semibold text-text-primary break-words">
             {formatIDR(item.price * item.quantity)}
             {item.quantity > 1 && (
-              <span className="text-sm font-normal text-gray-500 ml-1">
+              <span className="text-sm font-normal text-text-secondary ml-1">
                 ({formatIDR(item.price)} each)
               </span>
             )}
           </div>
           {assignedNames ? (
-            <p className="text-sm text-green-600 mt-1 break-words">{assignedNames}</p>
+            <p className="text-sm text-status-success mt-1 break-words font-medium">{assignedNames}</p>
           ) : (
-            <p className="text-sm text-orange-500 mt-1">Not assigned</p>
+            <p className="text-sm text-text-secondary mt-1">Not assigned</p>
           )}
         </div>
 
@@ -403,7 +403,7 @@ export function ItemCard({
           <button
             onClick={() => setIsAssigning(true)}
             disabled={disabled || participants.length === 0}
-            className="p-2 text-green-600 hover:bg-green-50 rounded disabled:opacity-50"
+            className="p-2 text-brand-primary hover:bg-brand-primary-soft rounded-lg disabled:opacity-50"
             title="Assign to participants"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -413,7 +413,7 @@ export function ItemCard({
           <button
             onClick={() => setIsEditing(true)}
             disabled={disabled}
-            className="p-2 text-blue-600 hover:bg-blue-50 rounded disabled:opacity-50"
+            className="p-2 text-text-secondary hover:bg-gray-100 hover:text-text-primary rounded-lg disabled:opacity-50"
             title="Edit item"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -423,7 +423,7 @@ export function ItemCard({
           <button
             onClick={handleDelete}
             disabled={disabled || isDeleting}
-            className="p-2 text-red-600 hover:bg-red-50 rounded disabled:opacity-50"
+            className="p-2 text-status-danger hover:bg-red-50 rounded-lg disabled:opacity-50"
             title="Delete item"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

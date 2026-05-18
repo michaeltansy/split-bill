@@ -181,13 +181,13 @@ export default function SessionPage({
 
   if (isLoading) {
     return (
-      <main className="min-h-screen p-4 md:p-8">
+      <main className="min-h-screen p-4 md:p-8 bg-surface-bg">
         <div className="max-w-6xl mx-auto animate-pulse">
           <div className="h-8 bg-gray-200 rounded w-1/3 mb-6"></div>
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="h-64 bg-gray-200 rounded"></div>
-            <div className="h-64 bg-gray-200 rounded"></div>
-            <div className="h-64 bg-gray-200 rounded"></div>
+            <div className="h-64 bg-gray-200 rounded-2xl"></div>
+            <div className="h-64 bg-gray-200 rounded-2xl"></div>
+            <div className="h-64 bg-gray-200 rounded-2xl"></div>
           </div>
         </div>
       </main>
@@ -196,15 +196,15 @@ export default function SessionPage({
 
   if (error || !session) {
     return (
-      <main className="min-h-screen flex flex-col items-center justify-center p-8">
+      <main className="min-h-screen flex flex-col items-center justify-center p-8 bg-surface-bg">
         <div className="text-6xl mb-4">&#9888;&#65039;</div>
-        <h1 className="text-2xl font-bold mb-2 text-gray-900">Session not found</h1>
-        <p className="text-gray-600 mb-4">
+        <h1 className="text-2xl font-bold mb-2 text-text-primary">Session not found</h1>
+        <p className="text-text-secondary mb-4">
           This session may have expired or the link is incorrect.
         </p>
         <Link
           href="/"
-          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          className="px-4 py-2 bg-brand-primary text-white font-semibold rounded-xl hover:bg-brand-primary-hover"
         >
           Go to Home Page
         </Link>
@@ -215,14 +215,14 @@ export default function SessionPage({
   // Participant mode: show simplified view
   if (participantName && currentParticipant) {
     return (
-      <main className="min-h-screen p-4 md:p-8 bg-gray-50">
+      <main className="min-h-screen p-4 md:p-8 bg-surface-bg">
         <div className="max-w-lg mx-auto">
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
-            <h1 className="text-2xl font-bold">Split Bill</h1>
+            <h1 className="text-2xl font-bold text-text-primary">Split Bill</h1>
             <a
               href={`/session/${id}`}
-              className="text-sm text-blue-600 hover:text-blue-700"
+              className="text-sm font-semibold text-brand-primary hover:text-brand-primary-hover"
             >
               Full View
             </a>
@@ -239,7 +239,7 @@ export default function SessionPage({
           />
 
           {/* Session info footer */}
-          <div className="mt-8 text-center text-sm text-gray-500">
+          <div className="mt-8 text-center text-sm text-text-secondary">
             <p>
               Session expires:{' '}
               {new Date(session.expires_at).toLocaleDateString('en-US', {
@@ -258,29 +258,29 @@ export default function SessionPage({
   // Participant name provided but not found
   if (participantName && !currentParticipant) {
     return (
-      <main className="min-h-screen flex flex-col items-center justify-center p-8">
+      <main className="min-h-screen flex flex-col items-center justify-center p-8 bg-surface-bg">
         <div className="text-6xl mb-4">&#128100;</div>
-        <h1 className="text-2xl font-bold mb-2 text-gray-900">Participant not found</h1>
-        <p className="text-gray-600 mb-4">
+        <h1 className="text-2xl font-bold mb-2 text-text-primary">Participant not found</h1>
+        <p className="text-text-secondary mb-4">
           &quot;{participantName}&quot; is not in this session.
         </p>
         <div className="flex gap-4">
           <a
             href={`/session/${id}`}
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+            className="px-4 py-2 bg-brand-primary text-white font-semibold rounded-xl hover:bg-brand-primary-hover"
           >
             View Full Session
           </a>
         </div>
         {participants.length > 0 && (
           <div className="mt-6 text-center">
-            <p className="text-sm text-gray-500 mb-2">Available participants:</p>
+            <p className="text-sm text-text-secondary mb-2">Available participants:</p>
             <div className="flex flex-wrap gap-2 justify-center">
               {participants.map((p) => (
                 <a
                   key={p.id}
                   href={`/session/${id}?participant=${encodeURIComponent(p.name)}`}
-                  className="px-3 py-1 bg-gray-100 rounded-full text-sm hover:bg-gray-200"
+                  className="px-3 py-1 bg-brand-primary-soft text-text-primary rounded-full text-sm hover:bg-brand-primary hover:text-white transition-colors"
                 >
                   {p.name}
                 </a>
@@ -294,14 +294,14 @@ export default function SessionPage({
 
   // Owner view (default)
   return (
-    <main className="min-h-screen p-4 md:p-8 bg-gray-50">
+    <main className="min-h-screen p-4 md:p-8 bg-surface-bg">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl md:text-3xl font-bold">Split Bill</h1>
+          <h1 className="text-2xl md:text-3xl font-bold text-text-primary">Split Bill</h1>
           <button
             onClick={() => setIsShareModalOpen(true)}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
+            className="px-4 py-2 bg-brand-primary text-white font-semibold rounded-xl hover:bg-brand-primary-hover flex items-center gap-2"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
@@ -320,8 +320,8 @@ export default function SessionPage({
 
         {/* Participant Links */}
         {participants.length > 0 && (
-          <div className="mb-6 p-4 bg-blue-50 rounded-lg">
-            <p className="text-sm font-medium text-blue-800 mb-2">
+          <div className="mb-6 p-4 bg-brand-primary-soft rounded-2xl">
+            <p className="text-sm font-medium text-text-primary mb-2">
               Share individual links with participants:
             </p>
             <div className="flex flex-wrap gap-2">
@@ -331,7 +331,7 @@ export default function SessionPage({
                   href={`/session/${id}?participant=${encodeURIComponent(p.name)}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="px-3 py-1 bg-white border border-blue-200 rounded-full text-sm text-blue-600 hover:bg-blue-100"
+                  className="px-3 py-1 bg-white border border-border-subtle rounded-full text-sm font-medium text-brand-primary hover:bg-brand-primary hover:text-white hover:border-brand-primary transition-colors"
                 >
                   {p.name}
                 </a>
@@ -345,8 +345,8 @@ export default function SessionPage({
           {/* Left column: Receipt Summary & Participants */}
           <div className="space-y-6">
             {/* Receipt Summary */}
-            <section className="bg-white rounded-lg shadow-sm p-6">
-              <h2 className="text-lg font-semibold mb-4">Receipt Summary</h2>
+            <section className="bg-surface-card rounded-2xl shadow-sm p-6">
+              <h2 className="text-lg font-semibold mb-4 text-text-primary">Receipt Summary</h2>
               <TaxServiceInput
                 session={session}
                 onUpdate={handleUpdateSession}
@@ -354,8 +354,8 @@ export default function SessionPage({
             </section>
 
             {/* Participants */}
-            <section className="bg-white rounded-lg shadow-sm p-6">
-              <h2 className="text-lg font-semibold mb-4">
+            <section className="bg-surface-card rounded-2xl shadow-sm p-6">
+              <h2 className="text-lg font-semibold mb-4 text-text-primary">
                 Participants ({participants.length})
               </h2>
               <ParticipantManager
@@ -368,8 +368,8 @@ export default function SessionPage({
 
           {/* Middle column: Items */}
           <div className="md:col-span-1">
-            <section className="bg-white rounded-lg shadow-sm p-6">
-              <h2 className="text-lg font-semibold mb-4">
+            <section className="bg-surface-card rounded-2xl shadow-sm p-6">
+              <h2 className="text-lg font-semibold mb-4 text-text-primary">
                 Items ({items.length})
               </h2>
               <ItemList
@@ -386,8 +386,8 @@ export default function SessionPage({
 
           {/* Right column: Bill Summary */}
           <div className="md:col-span-2 lg:col-span-1">
-            <section className="bg-white rounded-lg shadow-sm p-6">
-              <h2 className="text-lg font-semibold mb-4">Bill Summary</h2>
+            <section className="bg-surface-card rounded-2xl shadow-sm p-6">
+              <h2 className="text-lg font-semibold mb-4 text-text-primary">Bill Summary</h2>
               <BillSummary
                 bills={bills}
                 totalAssigned={totalAssigned}
@@ -399,7 +399,7 @@ export default function SessionPage({
         </div>
 
         {/* Session info footer */}
-        <div className="mt-8 text-center text-sm text-gray-500">
+        <div className="mt-8 text-center text-sm text-text-secondary">
           <p>
             Session expires:{' '}
             {new Date(session.expires_at).toLocaleDateString('en-US', {

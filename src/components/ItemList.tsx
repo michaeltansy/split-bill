@@ -74,12 +74,12 @@ export function ItemList({
   return (
     <div className="space-y-4">
       {items.length === 0 && !isAdding ? (
-        <div className="text-center py-8 text-gray-500">
+        <div className="text-center py-8 text-text-secondary">
           <p>No items yet.</p>
           <button
             onClick={() => setIsAdding(true)}
             disabled={disabled}
-            className="mt-2 text-blue-600 hover:underline disabled:opacity-50"
+            className="mt-2 font-semibold text-brand-primary hover:text-brand-primary-hover hover:underline disabled:opacity-50"
           >
             Add your first item
           </button>
@@ -102,14 +102,14 @@ export function ItemList({
           </div>
 
           {isAdding ? (
-            <form onSubmit={handleAdd} className="border rounded-lg p-4 bg-gray-50 space-y-3">
+            <form onSubmit={handleAdd} className="border border-border-subtle rounded-2xl p-4 bg-surface-bg space-y-3">
               <input
                 type="text"
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
                 placeholder="Item name"
                 disabled={isSaving}
-                className="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-border-subtle bg-white rounded-lg text-text-primary focus:outline-none focus:ring-2 focus:ring-brand-primary"
                 autoFocus
               />
               <div className="flex gap-2">
@@ -122,7 +122,7 @@ export function ItemList({
                     onChange={(e) => setNewPrice(e.target.value)}
                     placeholder="Price"
                     disabled={isSaving}
-                    className="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-border-subtle bg-white rounded-lg text-text-primary focus:outline-none focus:ring-2 focus:ring-brand-primary"
                   />
                 </div>
                 <div className="w-20">
@@ -133,16 +133,16 @@ export function ItemList({
                     onChange={(e) => setNewQuantity(e.target.value)}
                     placeholder="Qty"
                     disabled={isSaving}
-                    className="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-border-subtle bg-white rounded-lg text-text-primary focus:outline-none focus:ring-2 focus:ring-brand-primary"
                   />
                 </div>
               </div>
-              {error && <p className="text-sm text-red-600">{error}</p>}
+              {error && <p className="text-sm text-status-danger">{error}</p>}
               <div className="flex gap-2">
                 <button
                   type="submit"
                   disabled={isSaving}
-                  className="flex-1 px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+                  className="flex-1 px-3 py-2 bg-brand-primary text-white font-semibold rounded-xl hover:bg-brand-primary-hover disabled:opacity-50"
                 >
                   {isSaving ? 'Adding...' : 'Add Item'}
                 </button>
@@ -156,7 +156,7 @@ export function ItemList({
                     setError(null);
                   }}
                   disabled={isSaving}
-                  className="px-3 py-2 border rounded hover:bg-gray-100"
+                  className="px-3 py-2 border border-border-subtle text-text-primary rounded-xl hover:bg-gray-100"
                 >
                   Cancel
                 </button>
@@ -166,7 +166,7 @@ export function ItemList({
             <button
               onClick={() => setIsAdding(true)}
               disabled={disabled}
-              className="w-full py-2 border-2 border-dashed border-gray-300 rounded-lg text-gray-500 hover:border-gray-400 hover:text-gray-600 disabled:opacity-50"
+              className="w-full py-2 border-2 border-dashed border-border-subtle rounded-2xl text-text-secondary hover:border-brand-primary hover:text-brand-primary disabled:opacity-50"
             >
               + Add Item
             </button>

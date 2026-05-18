@@ -70,13 +70,13 @@ export function ShareModal({
       />
 
       {/* Modal */}
-      <div className="relative bg-white rounded-xl shadow-xl w-full max-w-md max-h-[90vh] overflow-hidden">
+      <div className="relative bg-surface-card rounded-2xl shadow-xl w-full max-w-md max-h-[90vh] overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b">
-          <h2 className="text-lg font-semibold">Share Session</h2>
+        <div className="flex items-center justify-between p-4 border-b border-border-subtle">
+          <h2 className="text-lg font-semibold text-text-primary">Share Session</h2>
           <button
             onClick={onClose}
-            className="p-1 hover:bg-gray-100 rounded-full"
+            className="p-1 hover:bg-gray-100 rounded-full text-text-primary"
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -85,13 +85,13 @@ export function ShareModal({
         </div>
 
         {/* Tabs */}
-        <div className="flex border-b">
+        <div className="flex border-b border-border-subtle">
           <button
             onClick={() => setActiveTab('link')}
             className={`flex-1 py-3 text-sm font-medium ${
               activeTab === 'link'
-                ? 'text-blue-600 border-b-2 border-blue-600'
-                : 'text-gray-500 hover:text-gray-700'
+                ? 'text-brand-primary border-b-2 border-brand-primary'
+                : 'text-text-secondary hover:text-text-primary'
             }`}
           >
             Link
@@ -100,8 +100,8 @@ export function ShareModal({
             onClick={() => setActiveTab('qr')}
             className={`flex-1 py-3 text-sm font-medium ${
               activeTab === 'qr'
-                ? 'text-blue-600 border-b-2 border-blue-600'
-                : 'text-gray-500 hover:text-gray-700'
+                ? 'text-brand-primary border-b-2 border-brand-primary'
+                : 'text-text-secondary hover:text-text-primary'
             }`}
           >
             QR Code
@@ -111,8 +111,8 @@ export function ShareModal({
               onClick={() => setActiveTab('participants')}
               className={`flex-1 py-3 text-sm font-medium ${
                 activeTab === 'participants'
-                  ? 'text-blue-600 border-b-2 border-blue-600'
-                  : 'text-gray-500 hover:text-gray-700'
+                  ? 'text-brand-primary border-b-2 border-brand-primary'
+                  : 'text-text-secondary hover:text-text-primary'
               }`}
             >
               Participants
@@ -124,7 +124,7 @@ export function ShareModal({
         <div className="p-4 overflow-y-auto max-h-[60vh]">
           {activeTab === 'link' && (
             <div className="space-y-4">
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-text-secondary">
                 Share this link with anyone to let them view and edit the session.
               </p>
 
@@ -133,11 +133,11 @@ export function ShareModal({
                   type="text"
                   value={shareUrl}
                   readOnly
-                  className="flex-1 px-3 py-2 border rounded-lg bg-gray-50 text-sm"
+                  className="flex-1 px-3 py-2 border border-border-subtle rounded-lg bg-surface-bg text-sm text-text-primary"
                 />
                 <button
                   onClick={() => handleCopy(shareUrl, 'main')}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 whitespace-nowrap"
+                  className="px-4 py-2 bg-brand-primary text-white font-semibold rounded-xl hover:bg-brand-primary-hover whitespace-nowrap"
                 >
                   {copied === 'main' ? 'Copied!' : 'Copy'}
                 </button>
@@ -146,7 +146,7 @@ export function ShareModal({
               {canShare && (
                 <button
                   onClick={handleNativeShare}
-                  className="w-full py-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-gray-400 hover:text-gray-700 flex items-center justify-center gap-2"
+                  className="w-full py-3 border-2 border-dashed border-border-subtle rounded-2xl text-text-secondary hover:border-brand-primary hover:text-brand-primary flex items-center justify-center gap-2"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
@@ -159,11 +159,11 @@ export function ShareModal({
 
           {activeTab === 'qr' && (
             <div className="flex flex-col items-center space-y-4">
-              <p className="text-sm text-gray-600 text-center">
+              <p className="text-sm text-text-secondary text-center">
                 Scan this QR code to open the session on another device.
               </p>
 
-              <div className="p-4 bg-white border rounded-lg">
+              <div className="p-4 bg-white border border-border-subtle rounded-2xl">
                 <QRCodeSVG
                   value={shareUrl}
                   size={200}
@@ -174,7 +174,7 @@ export function ShareModal({
 
               <button
                 onClick={() => handleCopy(shareUrl, 'qr')}
-                className="text-sm text-blue-600 hover:text-blue-700"
+                className="text-sm font-semibold text-brand-primary hover:text-brand-primary-hover"
               >
                 {copied === 'qr' ? 'Link copied!' : 'Copy link instead'}
               </button>
@@ -183,7 +183,7 @@ export function ShareModal({
 
           {activeTab === 'participants' && (
             <div className="space-y-4">
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-text-secondary">
                 Share individual links with each participant so they can view their personal bill and claim items.
               </p>
 
@@ -193,12 +193,12 @@ export function ShareModal({
                   const copyId = `participant-${p.id}`;
 
                   return (
-                    <div key={p.id} className="border rounded-lg p-3">
+                    <div key={p.id} className="border border-border-subtle rounded-xl p-3">
                       <div className="flex items-center justify-between mb-2">
-                        <span className="font-medium">{p.name}</span>
+                        <span className="font-medium text-text-primary">{p.name}</span>
                         <button
                           onClick={() => handleCopy(url, copyId)}
-                          className="text-sm text-blue-600 hover:text-blue-700"
+                          className="text-sm font-semibold text-brand-primary hover:text-brand-primary-hover"
                         >
                           {copied === copyId ? 'Copied!' : 'Copy'}
                         </button>
@@ -207,7 +207,7 @@ export function ShareModal({
                         type="text"
                         value={url}
                         readOnly
-                        className="w-full px-2 py-1 bg-gray-50 border rounded text-xs text-gray-600"
+                        className="w-full px-2 py-1 bg-surface-bg border border-border-subtle rounded-lg text-xs text-text-secondary"
                       />
                     </div>
                   );
@@ -218,10 +218,10 @@ export function ShareModal({
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t bg-gray-50">
+        <div className="p-4 border-t border-border-subtle bg-surface-bg">
           <button
             onClick={onClose}
-            className="w-full py-2 text-gray-600 hover:text-gray-800"
+            className="w-full py-2 text-text-secondary hover:text-text-primary"
           >
             Close
           </button>
