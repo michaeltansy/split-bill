@@ -11,6 +11,14 @@ export interface Session {
   service_percentage: number;
   receipt_image_url: string | null;
   status: 'active' | 'completed' | 'expired';
+  created_by: string | null;
+}
+
+export interface AuthUser {
+  id: string;
+  email: string | null;
+  name: string | null;
+  avatar_url: string | null;
 }
 
 export interface Participant {

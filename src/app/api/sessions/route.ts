@@ -1,11 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerClient } from '@/lib/supabase';
+import { cookies } from 'next/headers';
+import { createServerClient, createRouteHandlerClient } from '@/lib/supabase';
 import type { CreateSessionRequest } from '@/types';
 
 const ACCOUNT_NUMBER_RE = /^[0-9]{8,20}$/;
 
 export async function POST(request: NextRequest) {
   try {
+    // Auth is enforced here in the handler — the service-role client used for
+    // the write bypasses RLS, so the DB layer can't be relied on for this.
+    const cookieStore = await cookies();
+    const authClient = createRouteHandlerClient(cookieStore);
+    const {
+      data: { user },
+    } = await authClient.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Sign in to create a session', code: 'UNAUTHENTICATED' },
+        { status: 401 }
+      );
+    }
+
     const supabase = createServerClient();
     const body: CreateSessionRequest = await request.json();
 
@@ -40,6 +56,7 @@ export async function POST(request: NextRequest) {
         tax_percentage: body.tax_percentage || 0,
         service_percentage: body.service_percentage || 0,
         receipt_image_url: body.receipt_image_url || null,
+        created_by: user.id,
       })
       .select()
       .single();

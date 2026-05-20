@@ -3,6 +3,7 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/components/Toast';
+import { AccountMenu } from '@/components/AccountMenu';
 import { BankInfoForm } from '@/components/BankInfoForm';
 import { useBillScan } from '@/hooks/useBillScan';
 import { formatIDR } from '@/lib/format';
@@ -151,6 +152,9 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-surface-bg py-8 px-4">
       <div className="max-w-2xl mx-auto">
+        <div className="flex justify-end mb-4">
+          <AccountMenu />
+        </div>
         <header className="mb-8 text-center">
           <h1 className="text-4xl font-bold mb-2 text-text-primary">Split Bill</h1>
           <p className="text-text-primary">Add items, tax, and service fee — then create your session.</p>
