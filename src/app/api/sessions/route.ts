@@ -1,9 +1,44 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { createServerClient, createRouteHandlerClient } from '@/lib/supabase';
-import type { CreateSessionRequest } from '@/types';
+import { listSessionsForUser } from '@/lib/sessions';
+import type { CreateSessionRequest, SessionTab } from '@/types';
 
 const ACCOUNT_NUMBER_RE = /^[0-9]{8,20}$/;
+
+// List the authenticated user's sessions for a tab (active|expired), cursor-paginated.
+export async function GET(request: NextRequest) {
+  try {
+    const cookieStore = await cookies();
+    const authClient = createRouteHandlerClient(cookieStore);
+    const {
+      data: { user },
+    } = await authClient.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Sign in to view your sessions', code: 'UNAUTHENTICATED' },
+        { status: 401 }
+      );
+    }
+
+    const tabParam = request.nextUrl.searchParams.get('tab');
+    const tab: SessionTab = tabParam === 'expired' ? 'expired' : 'active';
+    const cursor = request.nextUrl.searchParams.get('cursor');
+
+    // Service-role client for the read; authorization is enforced by scoping the
+    // query to the verified user id inside the helper.
+    const supabase = createServerClient();
+    const result = await listSessionsForUser(supabase, user.id, tab, cursor);
+
+    return NextResponse.json(result);
+  } catch (error) {
+    return NextResponse.json(
+      { error: 'Internal server error', code: 'INTERNAL_ERROR' },
+      { status: 500 }
+    );
+  }
+}
 
 export async function POST(request: NextRequest) {
   try {

@@ -13,6 +13,7 @@ import { BillSummary } from '@/components/BillSummary';
 import { ParticipantView } from '@/components/ParticipantView';
 import { ShareModal } from '@/components/ShareModal';
 import { BankInfoCard } from '@/components/BankInfoCard';
+import { SessionOwnerControls } from '@/components/SessionOwnerControls';
 import type { Session, ItemAssignment } from '@/types';
 import type { AssignmentPayload } from '@/components/ItemCard';
 
@@ -302,8 +303,15 @@ export default function SessionPage({
     <main className="min-h-screen p-4 md:p-8 bg-surface-bg">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl md:text-3xl font-bold text-text-primary">Split Bill</h1>
+        <div className="flex items-center justify-between mb-6 gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <h1 className="text-2xl md:text-3xl font-bold text-text-primary">Split Bill</h1>
+            <SessionOwnerControls
+              sessionId={id}
+              createdBy={session.created_by}
+              status={session.status}
+            />
+          </div>
           <button
             onClick={() => setIsShareModalOpen(true)}
             className="px-4 py-2 bg-brand-primary text-white font-semibold rounded-xl hover:bg-brand-primary-hover flex items-center gap-2"
