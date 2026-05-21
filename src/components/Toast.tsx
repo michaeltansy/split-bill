@@ -11,15 +11,27 @@ import {
 
 type ToastType = 'success' | 'error' | 'info' | 'warning';
 
+interface ToastAction {
+  label: string;
+  onClick: () => void;
+}
+
+interface ToastOptions {
+  action?: ToastAction;
+  duration?: number; // ms before auto-dismiss; defaults to 4000
+}
+
 interface Toast {
   id: string;
   message: string;
   type: ToastType;
+  action?: ToastAction;
+  duration: number;
 }
 
 interface ToastContextType {
   toasts: Toast[];
-  addToast: (message: string, type?: ToastType) => void;
+  addToast: (message: string, type?: ToastType, options?: ToastOptions) => void;
   removeToast: (id: string) => void;
 }
 
@@ -36,10 +48,16 @@ export function useToast() {
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
 
-  const addToast = useCallback((message: string, type: ToastType = 'info') => {
-    const id = Math.random().toString(36).substring(2, 9);
-    setToasts((prev) => [...prev, { id, message, type }]);
-  }, []);
+  const addToast = useCallback(
+    (message: string, type: ToastType = 'info', options?: ToastOptions) => {
+      const id = Math.random().toString(36).substring(2, 9);
+      setToasts((prev) => [
+        ...prev,
+        { id, message, type, action: options?.action, duration: options?.duration ?? 4000 },
+      ]);
+    },
+    []
+  );
 
   const removeToast = useCallback((id: string) => {
     setToasts((prev) => prev.filter((t) => t.id !== id));
@@ -71,9 +89,9 @@ function ToastContainer({
 
 function ToastItem({ toast, onClose }: { toast: Toast; onClose: () => void }) {
   useEffect(() => {
-    const timer = setTimeout(onClose, 4000);
+    const timer = setTimeout(onClose, toast.duration);
     return () => clearTimeout(timer);
-  }, [onClose]);
+  }, [onClose, toast.duration]);
 
   const bgColors = {
     success: 'bg-status-success',
@@ -112,6 +130,17 @@ function ToastItem({ toast, onClose }: { toast: Toast; onClose: () => void }) {
     >
       {icons[toast.type]}
       <span className="flex-1">{toast.message}</span>
+      {toast.action && (
+        <button
+          onClick={() => {
+            toast.action!.onClick();
+            onClose();
+          }}
+          className="px-2 py-1 -my-1 font-semibold underline hover:bg-white/20 rounded whitespace-nowrap"
+        >
+          {toast.action.label}
+        </button>
+      )}
       <button
         onClick={onClose}
         className="p-1 hover:bg-white/20 rounded"

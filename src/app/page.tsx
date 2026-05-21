@@ -152,7 +152,7 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-surface-bg py-8 px-4">
       <div className="max-w-2xl mx-auto">
-        <div className="flex justify-end mb-4">
+        <div className="mb-4">
           <AccountMenu />
         </div>
         <header className="mb-8 text-center">

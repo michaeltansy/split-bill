@@ -12,6 +12,7 @@ export interface Session {
   receipt_image_url: string | null;
   status: 'active' | 'completed' | 'expired';
   created_by: string | null;
+  deleted_at: string | null;
 }
 
 export interface AuthUser {
@@ -103,6 +104,24 @@ export interface ParticipantItem {
   shared_with: string[];
 }
 
+// My Sessions list
+export type SessionTab = 'active' | 'expired';
+
+// Lightweight row shape for the My Sessions list (avoids over-fetching SessionFull).
+export interface SessionSummary {
+  id: string;
+  created_at: string;
+  expires_at: string;
+  grand_total: number;
+  status: 'active' | 'completed' | 'expired';
+  participant_count: number;
+}
+
+export interface ListSessionsResponse {
+  sessions: SessionSummary[];
+  next_cursor: string | null; // created_at of the last row, or null when no more pages
+}
+
 // API Request/Response Types
 export interface CreateSessionRequest {
   subtotal?: number;
@@ -136,4 +155,6 @@ export type APIErrorCode =
   | 'SESSION_EXPIRED'
   | 'INVALID_INPUT'
   | 'PARTICIPANT_EXISTS'
-  | 'INVALID_PERCENTAGE';
+  | 'INVALID_PERCENTAGE'
+  | 'UNAUTHENTICATED'
+  | 'FORBIDDEN';
