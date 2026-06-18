@@ -299,15 +299,15 @@ export function useSession(sessionId: string): UseSessionReturn {
 
   const markPaid = useCallback(
     async (participantId: string, paid: boolean) => {
-      // Optimistic: flip locally so the participant sees feedback immediately.
-      // Realtime echo will idempotently confirm or a thrown error rolls back.
-      let prior: Participant | undefined;
+      // Capture prior state synchronously so the rollback is always available,
+      // even when instant mocks (tests) resolve the fetch before React flushes.
+      const prior = participants.find((p) => p.id === participantId);
       setParticipants((curr) =>
-        curr.map((p) => {
-          if (p.id !== participantId) return p;
-          prior = p;
-          return { ...p, is_paid: paid, paid_at: paid ? new Date().toISOString() : null };
-        })
+        curr.map((p) =>
+          p.id !== participantId
+            ? p
+            : { ...p, is_paid: paid, paid_at: paid ? new Date().toISOString() : null }
+        )
       );
 
       try {
@@ -317,13 +317,12 @@ export function useSession(sessionId: string): UseSessionReturn {
         });
       } catch (e) {
         if (prior) {
-          const rollback = prior;
-          setParticipants((curr) => curr.map((p) => (p.id === participantId ? rollback : p)));
+          setParticipants((curr) => curr.map((p) => (p.id === participantId ? prior! : p)));
         }
         throw e;
       }
     },
-    [sessionId]
+    [sessionId, participants]
   );
 
   const applyAssignmentLocally = useCallback((row: ItemAssignment) => {
