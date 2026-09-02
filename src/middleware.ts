@@ -5,7 +5,7 @@ import { createMiddlewareClient } from '@/lib/supabase';
 
 // Page routes that require an authenticated user. Participant/share flows and
 // the API stay open (API is gated per-handler where needed).
-const PROTECTED_PAGES = ['/'];
+const PROTECTED_PAGES = ['/', '/sessions'];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;

@@ -57,6 +57,108 @@ function setupSessionsTable({
   })
 }
 
+import { GET } from './route'
+
+function makeGetRequest(query = '') {
+  return new NextRequest(`http://localhost/api/sessions${query}`)
+}
+
+// A minimal thenable query builder: every chained method returns itself so
+// call order in the handler doesn't matter, and awaiting it resolves to the
+// configured result (mirrors how supabase-js query builders behave).
+function makeQueryBuilder(result: { data: unknown; error: { message: string } | null }) {
+  const builder: Record<string, unknown> = {}
+  const methods = ['select', 'eq', 'order', 'limit', 'or']
+  methods.forEach((m) => {
+    builder[m] = vi.fn().mockReturnValue(builder)
+  })
+  builder.then = (resolve: (v: typeof result) => void) => resolve(result)
+  return builder
+}
+
+describe('GET /api/sessions', () => {
+  beforeEach(() => {
+    vi.resetAllMocks()
+  })
+
+  it('returns 401 when the user is not authenticated', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: null } })
+
+    const res = await GET(makeGetRequest())
+
+    expect(res.status).toBe(401)
+    const body = await res.json()
+    expect(body.code).toBe('UNAUTHENTICATED')
+  })
+
+  it('returns 400 for an invalid cursor', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: { id: 'user-1' } } })
+
+    const res = await GET(makeGetRequest('?cursor=not-valid-base64!!'))
+
+    expect(res.status).toBe(400)
+    const body = await res.json()
+    expect(body.code).toBe('INVALID_INPUT')
+  })
+
+  it('returns sessions with nextCursor null when a page has no more rows', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: { id: 'user-1' } } })
+    const rows = [
+      { id: 's1', created_at: '2026-09-02T10:00:00.000Z' },
+      { id: 's2', created_at: '2026-09-01T10:00:00.000Z' },
+    ]
+    mockFrom.mockReturnValue(makeQueryBuilder({ data: rows, error: null }))
+
+    const res = await GET(makeGetRequest('?limit=10'))
+
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(body.sessions).toEqual(rows)
+    expect(body.nextCursor).toBeNull()
+  })
+
+  it('returns a nextCursor and trims the extra row when more results exist', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: { id: 'user-1' } } })
+    const rows = [
+      { id: 's1', created_at: '2026-09-02T10:00:00.000Z' },
+      { id: 's2', created_at: '2026-09-01T10:00:00.000Z' },
+      { id: 's3', created_at: '2026-08-31T10:00:00.000Z' },
+    ]
+    mockFrom.mockReturnValue(makeQueryBuilder({ data: rows, error: null }))
+
+    const res = await GET(makeGetRequest('?limit=2'))
+
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(body.sessions).toEqual(rows.slice(0, 2))
+    expect(body.nextCursor).toBeTruthy()
+
+    const decoded = JSON.parse(Buffer.from(body.nextCursor, 'base64url').toString('utf8'))
+    expect(decoded).toEqual({ createdAt: rows[1].created_at, id: rows[1].id })
+  })
+
+  it('returns 400 when the query errors', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: { id: 'user-1' } } })
+    mockFrom.mockReturnValue(makeQueryBuilder({ data: null, error: { message: 'DB error' } }))
+
+    const res = await GET(makeGetRequest())
+
+    expect(res.status).toBe(400)
+    const body = await res.json()
+    expect(body.error).toBe('DB error')
+  })
+
+  it('returns 500 on unexpected errors', async () => {
+    mockGetUser.mockRejectedValue(new Error('DB down'))
+
+    const res = await GET(makeGetRequest())
+
+    expect(res.status).toBe(500)
+    const body = await res.json()
+    expect(body.code).toBe('INTERNAL_ERROR')
+  })
+})
+
 describe('POST /api/sessions', () => {
   beforeEach(() => {
     vi.resetAllMocks()
