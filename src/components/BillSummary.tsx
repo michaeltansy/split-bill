@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import type { ParticipantBill, Participant, SessionBankAccount } from '@/types';
 import { formatIDR, formatNumber } from '@/lib/format';
-import { formatTransferBlock } from '@/lib/bankTransferText';
+import { formatTransferBlock, formatAllParticipantsText } from '@/lib/bankTransferText';
 
 interface BillSummaryProps {
   bills: ParticipantBill[];
@@ -24,6 +24,18 @@ export function BillSummary({
 }: BillSummaryProps) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [copiedAll, setCopiedAll] = useState(false);
+
+  const handleCopyAll = async () => {
+    const text = formatAllParticipantsText(bills, grandTotal, bankAccount);
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedAll(true);
+      setTimeout(() => setCopiedAll(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy:', err);
+    }
+  };
 
   const handleCopyBill = async (bill: ParticipantBill) => {
     const itemDetails = bill.items
@@ -75,6 +87,12 @@ ${itemDetails}
             Some items haven&apos;t been assigned to participants yet.
           </p>
         )}
+        <button
+          onClick={handleCopyAll}
+          className="mt-3 w-full py-2 text-sm font-medium border border-border-subtle bg-white text-text-primary rounded-xl hover:bg-brand-primary-soft hover:border-brand-primary transition-colors"
+        >
+          {copiedAll ? '✓ Copied!' : 'Copy All'}
+        </button>
       </div>
 
       {/* Individual bills */}

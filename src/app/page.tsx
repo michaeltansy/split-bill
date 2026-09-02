@@ -153,7 +153,7 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-surface-bg py-8 px-4">
       <div className="max-w-2xl mx-auto">
-        <div className="flex justify-end items-center gap-4 mb-4">
+        <div className="flex justify-between items-center gap-4 mb-4">
           <Link
             href="/sessions"
             className="text-sm font-medium text-text-secondary hover:text-brand-primary"
