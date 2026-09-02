@@ -4,6 +4,101 @@ import { createServerClient, createRouteHandlerClient } from '@/lib/supabase';
 import type { CreateSessionRequest } from '@/types';
 
 const ACCOUNT_NUMBER_RE = /^[0-9]{8,20}$/;
+const DEFAULT_PAGE_SIZE = 10;
+const MAX_PAGE_SIZE = 50;
+
+interface SessionCursor {
+  createdAt: string;
+  id: string;
+}
+
+function decodeCursor(raw: string): SessionCursor | null {
+  try {
+    const decoded = JSON.parse(Buffer.from(raw, 'base64url').toString('utf8'));
+    if (typeof decoded?.createdAt === 'string' && typeof decoded?.id === 'string') {
+      return decoded;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+function encodeCursor(cursor: SessionCursor): string {
+  return Buffer.from(JSON.stringify(cursor)).toString('base64url');
+}
+
+// Lists sessions created by the authenticated user, newest first. Uses keyset
+// (cursor) pagination on (created_at, id) rather than offset/page-number —
+// stable under concurrent inserts and doesn't degrade as the offset grows.
+export async function GET(request: NextRequest) {
+  try {
+    const cookieStore = await cookies();
+    const authClient = createRouteHandlerClient(cookieStore);
+    const {
+      data: { user },
+    } = await authClient.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Sign in to view session history', code: 'UNAUTHENTICATED' },
+        { status: 401 }
+      );
+    }
+
+    const { searchParams } = request.nextUrl;
+    const limitParam = parseInt(searchParams.get('limit') ?? '', 10);
+    const limit = Number.isFinite(limitParam)
+      ? Math.min(Math.max(limitParam, 1), MAX_PAGE_SIZE)
+      : DEFAULT_PAGE_SIZE;
+
+    const cursorParam = searchParams.get('cursor');
+    let cursor: SessionCursor | null = null;
+    if (cursorParam) {
+      cursor = decodeCursor(cursorParam);
+      if (!cursor) {
+        return NextResponse.json(
+          { error: 'Invalid cursor', code: 'INVALID_INPUT' },
+          { status: 400 }
+        );
+      }
+    }
+
+    const supabase = createServerClient();
+    let query = supabase
+      .from('sessions')
+      .select('*')
+      .eq('created_by', user.id)
+      .order('created_at', { ascending: false })
+      .order('id', { ascending: false })
+      .limit(limit + 1);
+
+    if (cursor) {
+      query = query.or(
+        `created_at.lt.${cursor.createdAt},and(created_at.eq.${cursor.createdAt},id.lt.${cursor.id})`
+      );
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      return NextResponse.json({ error: error.message, code: 'INVALID_INPUT' }, { status: 400 });
+    }
+
+    const rows = data ?? [];
+    const hasMore = rows.length > limit;
+    const sessions = hasMore ? rows.slice(0, limit) : rows;
+    const last = sessions[sessions.length - 1];
+    const nextCursor = hasMore && last ? encodeCursor({ createdAt: last.created_at, id: last.id }) : null;
+
+    return NextResponse.json({ sessions, nextCursor });
+  } catch (error) {
+    return NextResponse.json(
+      { error: 'Internal server error', code: 'INTERNAL_ERROR' },
+      { status: 500 }
+    );
+  }
+}
 
 export async function POST(request: NextRequest) {
   try {
