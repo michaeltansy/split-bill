@@ -71,14 +71,13 @@ export function calculateParticipantBills(
     }
   }
 
-  // Every share is allocated with the largest-remainder method so each column
-  // sums exactly and, once every item is assigned, the participant totals sum
-  // exactly to the session grand total. Tax keeps 2 decimals; the rest are
-  // whole rupiah.
+  // Every share keeps 2 decimals, as before. Shares are allocated with the
+  // largest-remainder method so each column sums exactly and, once every item
+  // is assigned, the participant totals sum exactly to the session grand total.
   const weights = bills.map((b) => b.subtotal);
-  const subtotals = allocateProportionally(sum(weights), weights);
-  const discounts = allocateProportionally(session.discount_amount ?? 0, weights);
-  const services = allocateProportionally(session.service_amount, weights);
+  const subtotals = allocateProportionally(sum(weights), weights, 2);
+  const discounts = allocateProportionally(session.discount_amount ?? 0, weights, 2);
+  const services = allocateProportionally(session.service_amount, weights, 2);
   const taxes = allocateProportionally(session.tax_amount, weights, 2);
 
   bills.forEach((bill, i) => {
@@ -93,8 +92,8 @@ export function calculateParticipantBills(
 }
 
 /**
- * Tax/service as a percentage of the base the restaurant applies them to:
- * service on the discounted subtotal, tax (PB1) on discounted subtotal + service.
+ * Tax and service as a percentage of the subtotal after discount. With no
+ * discount this is the same calculation as before: amount / subtotal.
  */
 export function calculatePercentages(
   subtotal: number,
@@ -102,19 +101,18 @@ export function calculatePercentages(
   serviceAmount: number,
   discountAmount = 0
 ): { taxPercentage: number; servicePercentage: number } {
-  const serviceBase = subtotal - discountAmount;
-  if (serviceBase <= 0) {
+  const base = subtotal - discountAmount;
+  if (base <= 0) {
     return { taxPercentage: 0, servicePercentage: 0 };
   }
 
-  const taxBase = serviceBase + serviceAmount;
   return {
-    taxPercentage: round2((taxAmount / taxBase) * 100),
-    servicePercentage: round2((serviceAmount / serviceBase) * 100),
+    taxPercentage: round2((taxAmount / base) * 100),
+    servicePercentage: round2((serviceAmount / base) * 100),
   };
 }
 
-/** Resolve the IDR discount from user input: whole rupiah, clamped to [0, subtotal]. */
+/** Resolve the discount from user input: 2 decimals, clamped to [0, subtotal]. */
 export function resolveDiscountAmount(
   subtotal: number,
   type: DiscountType,
@@ -125,7 +123,7 @@ export function resolveDiscountAmount(
   const raw =
     type === 'percentage' ? (subtotal * Math.min(value, 100)) / 100 : value;
 
-  return Math.min(Math.round(raw), subtotal);
+  return Math.min(round2(raw), subtotal);
 }
 
 export interface SessionTotalsInput {
