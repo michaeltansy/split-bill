@@ -39,7 +39,7 @@ Let a session carry one bill-level discount, applied to the **subtotal before ta
    - `discount_share_i = discount_amount × (subtotal_i / Σ subtotal)`
    - `total_i = subtotal_i − discount_share_i + service_share_i + tax_share_i`
    Σ `total_i` must equal `grand_total` (within rounding) when all items are assigned.
-8. **Rounding** — IDR has no practical decimals. Round each share to whole rupiah; assign the rounding remainder to the participant with the largest subtotal so totals sum exactly to `grand_total`. (Also fixes the existing 2-decimal rounding drift for tax/service.)
+8. **Rounding** — Subtotal, discount and service shares are whole rupiah; tax shares keep 2 decimals. Rounding remainders are allocated (largest-remainder) so each column and the totals sum exactly to `grand_total`. (Also fixes the existing rounding drift for tax/service.)
 9. **OCR** — Receipt parser extracts the discount line when present, returning `discount_type` + `discount_value` (percentage if the line shows `%`, else amount). Pre-fills the create-session form; user can edit.
 10. **Create-session form** (`src/app/page.tsx`) — New "Discount" row between Subtotal and Service: toggle `% | IDR` + number input. Summary shows `Discount (15%) −193.050` and the corrected grand total.
 11. **Owner edit** (`TaxServiceInput`) — Same discount control; saving persists discount fields and recomputed `grand_total` / percentages.
@@ -109,7 +109,7 @@ interface CreateSessionRequest {
    - `resolveDiscountAmount(subtotal, type, value): number` — rounds, clamps.
    - `calculateGrandTotal({ subtotal, discount_amount, service_amount, tax_amount })`.
    - Update `calculatePercentages` to take `discountAmount` and use the bases in Req 6.
-   - Update `calculateParticipantBills`: add `discount_share`, new `total` formula, whole-rupiah rounding with remainder allocation.
+   - Update `calculateParticipantBills`: add `discount_share`, new `total` formula, exact rounding with remainder allocation (tax to 2 decimals, the rest whole rupiah).
 2. **Validation** (`src/lib/validation.ts`) — `validateDiscount(type, value, subtotal)`; error code `INVALID_DISCOUNT` added to `APIErrorCode`.
 3. **Migration** — `007_session_discount.sql` as above.
 4. **API**
@@ -137,10 +137,10 @@ Two participants from the receipt: A takes items worth 643.500, B takes 643.500.
 | Subtotal | 643.500 | 643.500 | 1.287.000 |
 | Discount share | −96.525 | −96.525 | −193.050 |
 | Service share | 38.289 | 38.288 | 76.577 |
-| Tax share | 58.527 | 58.526 | 117.053 |
-| **Total** | **643.791** | **643.789** | **1.287.580** |
+| Tax share | 58.526,50 | 58.526,50 | 117.053 |
+| **Total** | **643.790,50** | **643.789,50** | **1.287.580** |
 
-(Odd rupiah remainders go to the participant with the larger subtotal; ties → first participant.)
+(Leftover units go to the largest fractional share; ties → larger subtotal, then first participant. Tax is split to 2 decimals, so it needs no leftover here.)
 
 ## Acceptance Criteria
 

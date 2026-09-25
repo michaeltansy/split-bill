@@ -71,21 +71,22 @@ export function calculateParticipantBills(
     }
   }
 
-  // Every share is allocated in whole rupiah with the largest-remainder method,
-  // so each column sums exactly and, once every item is assigned, the
-  // participant totals sum exactly to the session grand total.
+  // Every share is allocated with the largest-remainder method so each column
+  // sums exactly and, once every item is assigned, the participant totals sum
+  // exactly to the session grand total. Tax keeps 2 decimals; the rest are
+  // whole rupiah.
   const weights = bills.map((b) => b.subtotal);
   const subtotals = allocateProportionally(sum(weights), weights);
   const discounts = allocateProportionally(session.discount_amount ?? 0, weights);
   const services = allocateProportionally(session.service_amount, weights);
-  const taxes = allocateProportionally(session.tax_amount, weights);
+  const taxes = allocateProportionally(session.tax_amount, weights, 2);
 
   bills.forEach((bill, i) => {
     bill.subtotal = subtotals[i];
     bill.discount_share = discounts[i];
     bill.service_share = services[i];
     bill.tax_share = taxes[i];
-    bill.total = subtotals[i] - discounts[i] + services[i] + taxes[i];
+    bill.total = round2(subtotals[i] - discounts[i] + services[i] + taxes[i]);
   });
 
   return bills;
@@ -165,14 +166,20 @@ export function computeSessionTotals(input: SessionTotalsInput): SessionTotals {
 }
 
 /**
- * Split `total` (rounded to whole rupiah) across `weights` so the parts are
- * integers that sum exactly to it, using the largest-remainder method.
- * Leftover rupiah go to the largest fractional parts; ties go to the larger
- * weight, then the lower index. Returns all zeros when no weight is positive.
+ * Split `total` across `weights` so the parts, each rounded to `decimals`
+ * places, sum exactly to `total` (also rounded to `decimals`), using the
+ * largest-remainder method. Leftover units go to the largest fractional parts;
+ * ties go to the larger weight, then the lower index. Returns all zeros when
+ * no weight is positive.
  */
-export function allocateProportionally(total: number, weights: number[]): number[] {
+export function allocateProportionally(
+  total: number,
+  weights: number[],
+  decimals = 0
+): number[] {
+  const scale = 10 ** decimals;
   const parts = weights.map(() => 0);
-  const intTotal = Math.round(total);
+  const intTotal = Math.round(total * scale);
   const clamped = weights.map((w) => (w > 0 ? w : 0));
   const weightSum = sum(clamped);
 
@@ -183,8 +190,8 @@ export function allocateProportionally(total: number, weights: number[]): number
     parts[i] = Math.floor(r);
   });
 
-  // Each floor drops < 1, so the remainder never exceeds the number of
-  // positive weights: at most one extra rupiah per participant.
+  // Each floor drops < 1 unit, so the remainder never exceeds the number of
+  // positive weights: at most one extra unit per participant.
   const remainder = intTotal - sum(parts);
   const order = raw
     .map((r, i) => ({ i, frac: r - parts[i] }))
@@ -200,7 +207,7 @@ export function allocateProportionally(total: number, weights: number[]): number
     parts[order[k].i] += 1;
   }
 
-  return parts;
+  return parts.map((p) => p / scale);
 }
 
 function sum(values: number[]): number {

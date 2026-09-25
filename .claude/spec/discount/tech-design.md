@@ -114,11 +114,11 @@ export function computeSessionTotals(input: {
 };
 
 /**
- * Split an integer `total` across `weights` so parts are integers summing
- * exactly to `total` (largest-remainder method). Ties go to the larger
+ * Split `total` across `weights` so the parts, rounded to `decimals` places,
+ * sum exactly to `total` (largest-remainder method). Ties go to the larger
  * weight, then to the lower index.
  */
-export function allocateProportionally(total: number, weights: number[]): number[];
+export function allocateProportionally(total: number, weights: number[], decimals = 0): number[];
 ```
 
 `calculatePercentages(subtotal, tax, service)` gains a 4th parameter, `discountAmount = 0`, and uses the new bases. Any divide-by-zero base returns 0%.
@@ -134,7 +134,7 @@ const assigned = Math.round(sum(weights));
 const subtotals = allocateProportionally(assigned, weights);
 const discounts = allocateProportionally(session.discount_amount, weights);
 const services  = allocateProportionally(session.service_amount,  weights);
-const taxes     = allocateProportionally(session.tax_amount,      weights);
+const taxes     = allocateProportionally(session.tax_amount,      weights, 2); // tax keeps 2 decimals
 
 bills.forEach((b, i) => {
   b.subtotal       = subtotals[i];
@@ -145,10 +145,10 @@ bills.forEach((b, i) => {
 });
 ```
 
-- Every share is a whole rupiah and each column adds up exactly. So when all items are assigned and `session.subtotal` equals the item sum, Σ `total` equals `grand_total` exactly.
+- Subtotal, discount and service shares are whole rupiah; **tax shares keep 2 decimals**. Each column adds up exactly. So when all items are assigned and `session.subtotal` equals the item sum, Σ `total` equals `grand_total` exactly.
 - `item.share_amount` values stay unrounded for per-item display, which is the current behavior.
 - **Refines PRD Req 8:** leftover rupiah go by the largest-remainder method instead of all going to one person. This is fairer with many participants. With a tie it gives the same result as the PRD's worked example (A gets the extra rupiah).
-- The existing no-discount tests change only because whole-rupiah rounding replaces 2-decimal rounding. Update their expectations.
+- The existing no-discount tests change only because subtotal and service shares now round to whole rupiah (tax stays at 2 decimals). Update their expectations.
 
 ### 5.3 Worked check (PRD fixture)
 
@@ -158,7 +158,7 @@ Input: `subtotal 1_287_000, 15%, service 76_577, tax 117_053`. Expected output:
 - `service_percentage 7.00`
 - `tax_percentage 10.00`
 
-With two participants at 643_500 each, the totals are 643_791 and 643_789.
+With two participants at 643_500 each, tax is 58_526.5 each and the totals are 643_790.5 and 643_789.5.
 
 ## 6. Validation (`src/lib/validation.ts`)
 
@@ -257,13 +257,13 @@ Put the label logic in a small helper: `formatDiscountLabel(session)` in `src/li
 
 ### 8.5 `useBillCalculation`
 
-No logic change. `isValid` compares Σ `b.total` against `session.grand_total`, and it passes once the calc module includes the discount. Tighten the tolerance from `< 0.01` to `=== 0`: whole-rupiah allocation makes the sums exact.
+No logic change. `isValid` compares Σ `b.total` against `session.grand_total`, and it passes once the calc module includes the discount. Keep the `< 0.01` tolerance: tax shares carry 2 decimals, so totals are floats.
 
 ## 9. Edge Cases
 
 | Case | Behavior |
 |---|---|
-| No discount (legacy/new) | `discount_amount = 0`, no discount rows shown; totals equal today's apart from whole-rupiah rounding. |
+| No discount (legacy/new) | `discount_amount = 0`, no discount rows shown; totals equal today's apart from whole-rupiah rounding of subtotal/service shares. |
 | 100% discount | `net = 0`; service/tax % fall back to 0 (divide-by-zero guard); totals are service + tax only. |
 | Fixed discount > subtotal | Rejected with `INVALID_DISCOUNT` on client and server. |
 | Owner lowers subtotal below a fixed discount | PATCH rejected; UI shows error; owner edits discount first. |
@@ -277,7 +277,7 @@ No logic change. `isValid` compares Σ `b.total` against `session.grand_total`, 
 
 | File | Cases |
 |---|---|
-| `src/lib/calculations.test.ts` | `resolveDiscountAmount`: pct, amount, rounding (e.g. 15% of 1_287_001), clamp. `computeSessionTotals`: PRD fixture (grand total 1_287_580, 7.00% / 10.00%); 100% discount; zero discount. `allocateProportionally`: exact sum, ties, zero weights, empty. `calculateParticipantBills`: PRD 2-person fixture (643_791 / 643_789); 3-way equal split of odd amounts sums exactly; existing cases updated to whole-rupiah. |
+| `src/lib/calculations.test.ts` | `resolveDiscountAmount`: pct, amount, rounding (e.g. 15% of 1_287_001), clamp. `computeSessionTotals`: PRD fixture (grand total 1_287_580, 7.00% / 10.00%); 100% discount; zero discount. `allocateProportionally`: exact sum, ties, zero weights, empty. `calculateParticipantBills`: PRD 2-person fixture (643_790.5 / 643_789.5); 3-way equal split of odd amounts sums exactly; existing cases updated (whole rupiah; tax 2 decimals). |
 | `src/lib/validation.test.ts` | `validateDiscount`: bad type, NaN, negative, pct 100.01, amount > subtotal, valid bounds. |
 | `src/hooks/useBillCalculation.test.ts` | `isValid` true for fully assigned discounted fixture. |
 | `src/app/api/sessions/route.test.ts` | POST ignores client `grand_total`/`discount_amount`; invalid discount → 400 `INVALID_DISCOUNT`. |

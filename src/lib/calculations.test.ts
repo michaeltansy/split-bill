@@ -143,6 +143,11 @@ describe('allocateProportionally', () => {
   it('should round a fractional total first', () => {
     expect(allocateProportionally(10.4, [1, 1])).toEqual([5, 5])
   })
+
+  it('should allocate to 2 decimals when asked', () => {
+    expect(allocateProportionally(10, [1, 1, 1], 2)).toEqual([3.34, 3.33, 3.33])
+    expect(allocateProportionally(117_053, [1, 1], 2)).toEqual([58_526.5, 58_526.5])
+  })
 })
 
 describe('calculateParticipantBills', () => {
@@ -421,16 +426,16 @@ describe('calculateParticipantBills', () => {
 
     const alice = bills.find(b => b.participant.name === 'Alice')!
     const bob = bills.find(b => b.participant.name === 'Bob')!
-    // Total subtotal = 100. Alice 75% -> 75% of tax(10)/service(5), in whole
-    // rupiah: tax 7.5/2.5 -> 8/2 (tie -> larger weight), service 3.75/1.25 -> 4/1
-    expect(alice.tax_share).toBe(8)
+    // Total subtotal = 100. Alice 75% -> 75% of tax(10)/service(5). Tax keeps
+    // 2 decimals (7.5/2.5); service is whole rupiah: 3.75/1.25 -> 4/1
+    expect(alice.tax_share).toBe(7.5)
     expect(alice.service_share).toBe(4)
-    expect(bob.tax_share).toBe(2)
+    expect(bob.tax_share).toBe(2.5)
     expect(bob.service_share).toBe(1)
     expect(alice.total + bob.total).toBe(mockSession.grand_total)
   })
 
-  it('should allocate monetary fields in whole rupiah that sum exactly', () => {
+  it('should allocate whole rupiah (tax: 2 decimals) that sum exactly', () => {
     const items: ItemWithAssignments[] = [
       {
         id: 'i1',
@@ -456,10 +461,15 @@ describe('calculateParticipantBills', () => {
     // Per-item shares keep their exact value for display.
     expect(alice.items[0].share_amount).toBeCloseTo(3.333, 3)
     for (const bill of bills) {
-      for (const field of ['subtotal', 'discount_share', 'service_share', 'tax_share', 'total'] as const) {
+      for (const field of ['subtotal', 'discount_share', 'service_share'] as const) {
         expect(Number.isInteger(bill[field])).toBe(true)
       }
+      expect(bill.tax_share).toBe(Math.round(bill.tax_share * 100) / 100)
+      expect(bill.total).toBe(Math.round(bill.total * 100) / 100)
     }
+    // tax 10 over 3.333/6.667 -> 3.33 / 6.67
+    expect(alice.tax_share).toBe(3.33)
+    expect(bob.tax_share).toBe(6.67)
   })
 
   it('should split an odd amount three ways exactly', () => {
@@ -485,7 +495,9 @@ describe('calculateParticipantBills', () => {
     const bills = calculateParticipantBills(session, items, participants)
 
     expect(bills.map(b => b.subtotal)).toEqual([33_334, 33_333, 33_333])
-    expect(bills.reduce((s, b) => s + b.total, 0)).toBe(115_003)
+    // tax 10001 / 3 = 3333.666… each -> 3333.67 + 3333.67 + 3333.66
+    expect(bills.map(b => b.tax_share)).toEqual([3333.67, 3333.67, 3333.66])
+    expect(bills.reduce((s, b) => s + b.total, 0)).toBeCloseTo(115_003, 2)
   })
 
   it('should distribute the discount proportionally (reference receipt, 2 people)', () => {
@@ -516,8 +528,8 @@ describe('calculateParticipantBills', () => {
 
     const [alice, bob] = calculateParticipantBills(session, items, mockParticipants)
 
-    expect(alice).toMatchObject({ subtotal: 643_500, discount_share: 96_525, service_share: 38_289, tax_share: 58_527, total: 643_791 })
-    expect(bob).toMatchObject({ subtotal: 643_500, discount_share: 96_525, service_share: 38_288, tax_share: 58_526, total: 643_789 })
+    expect(alice).toMatchObject({ subtotal: 643_500, discount_share: 96_525, service_share: 38_289, tax_share: 58_526.5, total: 643_790.5 })
+    expect(bob).toMatchObject({ subtotal: 643_500, discount_share: 96_525, service_share: 38_288, tax_share: 58_526.5, total: 643_789.5 })
     expect(alice.total + bob.total).toBe(1_287_580)
   })
 
