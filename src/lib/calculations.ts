@@ -14,6 +14,7 @@ export function calculateParticipantBills(
     participant: p,
     items: [],
     subtotal: 0,
+    discount_share: 0,
     tax_share: 0,
     service_share: 0,
     total: 0,

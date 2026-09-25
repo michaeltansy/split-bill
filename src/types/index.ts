@@ -1,4 +1,6 @@
 // Database Types
+export type DiscountType = 'percentage' | 'amount';
+
 export interface Session {
   id: string;
   created_at: string;
@@ -9,6 +11,12 @@ export interface Session {
   grand_total: number;
   tax_percentage: number;
   service_percentage: number;
+  // Bill-level discount on the item subtotal, before service and tax.
+  // discount_type/discount_value are the user's input; discount_amount is the
+  // server-resolved IDR amount and the only value calculations read.
+  discount_type: DiscountType;
+  discount_value: number;
+  discount_amount: number;
   receipt_image_url: string | null;
   status: 'active' | 'completed' | 'expired';
   created_by: string | null;
@@ -89,6 +97,7 @@ export interface ParticipantBill {
   participant: Participant;
   items: ParticipantItem[];
   subtotal: number;
+  discount_share: number;
   tax_share: number;
   service_share: number;
   total: number;
@@ -111,6 +120,8 @@ export interface CreateSessionRequest {
   grand_total?: number;
   tax_percentage?: number;
   service_percentage?: number;
+  discount_type?: DiscountType;
+  discount_value?: number;
   receipt_image_url?: string;
   bank_account?: BankInfoInput | null;
 }
@@ -136,4 +147,5 @@ export type APIErrorCode =
   | 'SESSION_EXPIRED'
   | 'INVALID_INPUT'
   | 'PARTICIPANT_EXISTS'
-  | 'INVALID_PERCENTAGE';
+  | 'INVALID_PERCENTAGE'
+  | 'INVALID_DISCOUNT';
