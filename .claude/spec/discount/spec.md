@@ -55,7 +55,7 @@ Let a session carry one bill-level discount, applied to the **subtotal before ta
 - Item-level discounts (e.g. "buy 1 get 1 on beer") — bill-level only.
 - Multiple stacked discounts / promo codes.
 - Discount applied after tax or on service charge.
-- Excluding specific participants or items from the discount.
+- Excluding specific participants or items from the discount (decided: not planned).
 - Recomputing tax/service from percentages when the discount changes (user edits those amounts manually if needed).
 
 ## Data Model
@@ -150,7 +150,7 @@ Two participants from the receipt: A takes items worth 643.500, B takes 643.500.
 - Sessions created before the migration render identically (no discount line, same totals).
 - Discount > subtotal or percentage > 100 is rejected by both client and API.
 
-## Open Questions
+## Decisions
 
-1. Should changing the discount on an existing session auto-scale tax/service (assuming fixed rates), or leave them manual as proposed?
-2. Should the owner be able to exclude a participant from the discount (e.g. member-only promo)? Deferred to v2 unless needed.
+1. **Tax/service on discount change** — Manual. Changing the discount on an existing session does not auto-scale `tax_amount` or `service_amount`; the owner edits them by hand if needed (see Req 5).
+2. **Excluding participants from the discount** — No. The discount always applies to every participant proportionally (see Req 7). Not planned.
