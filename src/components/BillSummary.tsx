@@ -3,7 +3,11 @@
 import { useState } from 'react';
 import type { ParticipantBill, Participant, SessionBankAccount } from '@/types';
 import { formatIDR, formatNumber } from '@/lib/format';
-import { formatTransferBlock, formatAllParticipantsText } from '@/lib/bankTransferText';
+import {
+  formatDiscountLine,
+  formatTransferBlock,
+  formatAllParticipantsText,
+} from '@/lib/bankTransferText';
 
 interface BillSummaryProps {
   bills: ParticipantBill[];
@@ -44,7 +48,7 @@ export function BillSummary({
 
     const text = `${bill.participant.name}'s Bill:
 ${itemDetails}
-  Subtotal: ${formatIDR(bill.subtotal)}
+  Subtotal: ${formatIDR(bill.subtotal)}${formatDiscountLine(bill)}
   Tax: ${formatIDR(bill.tax_share)}
   Service: ${formatIDR(bill.service_share)}
   ─────────────
@@ -175,6 +179,12 @@ ${itemDetails}
                       <span className="text-text-secondary">Items Subtotal</span>
                       <span className="shrink-0 text-text-primary">{formatIDR(bill.subtotal)}</span>
                     </div>
+                    {bill.discount_share > 0 && (
+                      <div className="flex justify-between text-sm gap-2">
+                        <span className="text-text-secondary">Discount</span>
+                        <span className="shrink-0 text-text-primary">−{formatIDR(bill.discount_share)}</span>
+                      </div>
+                    )}
                     <div className="flex justify-between text-sm gap-2">
                       <span className="text-text-secondary">Tax</span>
                       <span className="shrink-0 text-text-primary">{formatIDR(bill.tax_share)}</span>

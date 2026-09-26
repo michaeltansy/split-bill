@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { formatTransferBlock, formatAllParticipantsText } from './bankTransferText'
+import { formatTransferBlock, formatAllParticipantsText, formatDiscountLine } from './bankTransferText'
 import type { ParticipantBill, SessionBankAccount } from '@/types'
 
 const mockBank: SessionBankAccount = {
@@ -17,6 +17,7 @@ function makeBill(name: string, total: number): ParticipantBill {
     participant: { id: name, session_id: 's1', name, created_at: '2024-01-01', is_paid: false, paid_at: null },
     items: [],
     subtotal: total,
+    discount_share: 0,
     tax_share: 0,
     service_share: 0,
     total,
@@ -89,5 +90,15 @@ describe('formatAllParticipantsText', () => {
     const transferIdx = result.indexOf('Transfer to:')
     expect(aliceIdx).toBeLessThan(grandTotalIdx)
     expect(grandTotalIdx).toBeLessThan(transferIdx)
+  })
+})
+
+describe('formatDiscountLine', () => {
+  it('returns an empty string without a discount share', () => {
+    expect(formatDiscountLine(makeBill('Alice', 1000))).toBe('')
+  })
+
+  it('formats the discount share on its own line', () => {
+    expect(formatDiscountLine({ ...makeBill('Alice', 1000), discount_share: 96_525 })).toBe('\n  Discount: −IDR 96.525')
   })
 })

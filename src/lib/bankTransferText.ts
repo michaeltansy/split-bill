@@ -13,6 +13,14 @@ export function formatTransferBlock(bank: SessionBankAccount | null): string {
     a/n ${bank.bank_account_holder}`;
 }
 
+// Formats the discount line for a copied bill. Empty when the participant has
+// no discount share, so callers can interpolate it unconditionally.
+export function formatDiscountLine(bill: ParticipantBill): string {
+  if (!(bill.discount_share > 0)) return '';
+  return `
+  Discount: −${formatIDR(bill.discount_share)}`;
+}
+
 // Formats every participant's total plus the grand total for clipboard copy,
 // with the bank transfer block (if any) appended at the end.
 export function formatAllParticipantsText(
