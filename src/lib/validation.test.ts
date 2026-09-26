@@ -7,6 +7,7 @@ import {
   validatePercentage,
   validatePercentageSum,
   validateTaxOrService,
+  validateDiscount,
   hasError,
   getErrorMessage,
 } from './validation'
@@ -228,6 +229,52 @@ describe('validateTaxOrService', () => {
       isValid: false,
       error: 'Amount is too large',
     })
+  })
+})
+
+describe('validateDiscount', () => {
+  it('should accept valid percentage and amount discounts', () => {
+    expect(validateDiscount('percentage', 15, 1_287_000).isValid).toBe(true)
+    expect(validateDiscount('percentage', 7.5, 100_000).isValid).toBe(true)
+    expect(validateDiscount('amount', 50_000, 100_000).isValid).toBe(true)
+  })
+
+  it('should accept the boundaries', () => {
+    expect(validateDiscount('percentage', 0, 100_000).isValid).toBe(true)
+    expect(validateDiscount('percentage', 100, 100_000).isValid).toBe(true)
+    expect(validateDiscount('amount', 100_000, 100_000).isValid).toBe(true)
+  })
+
+  it('should accept form strings, treating empty as no discount', () => {
+    expect(validateDiscount('percentage', '15', 100_000).isValid).toBe(true)
+    expect(validateDiscount('amount', '', 100_000).isValid).toBe(true)
+    expect(validateDiscount('percentage', undefined, 100_000).isValid).toBe(true)
+  })
+
+  it('should reject an unknown type', () => {
+    const result = validateDiscount('fixed', 10, 100_000)
+    expect(result.isValid).toBe(false)
+    expect(result.error).toBe('Discount type must be percentage or amount')
+    expect(validateDiscount(undefined, 10, 100_000).isValid).toBe(false)
+  })
+
+  it('should reject non-numeric values', () => {
+    expect(validateDiscount('percentage', 'abc', 100_000).error).toBe('Discount must be a valid number')
+    expect(validateDiscount('percentage', NaN, 100_000).isValid).toBe(false)
+    expect(validateDiscount('amount', Infinity, 100_000).isValid).toBe(false)
+    expect(validateDiscount('amount', { v: 1 }, 100_000).isValid).toBe(false)
+  })
+
+  it('should reject negative values', () => {
+    expect(validateDiscount('amount', -1, 100_000).error).toBe('Discount cannot be negative')
+  })
+
+  it('should reject a percentage above 100', () => {
+    expect(validateDiscount('percentage', 100.01, 100_000).error).toBe('Discount cannot exceed 100%')
+  })
+
+  it('should reject an amount above the subtotal', () => {
+    expect(validateDiscount('amount', 100_001, 100_000).error).toBe('Discount cannot exceed the subtotal')
   })
 })
 

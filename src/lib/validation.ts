@@ -135,6 +135,45 @@ export function validateTaxOrService(amount: string | number): ValidationResult 
   return { isValid: true };
 }
 
+/**
+ * Validate a bill-level discount against the subtotal it applies to.
+ * Accepts raw form strings (an empty string means no discount) and untyped
+ * API input, so the create form, owner edit and session routes share it.
+ */
+export function validateDiscount(
+  type: unknown,
+  value: unknown,
+  subtotal: number
+): ValidationResult {
+  if (type !== 'percentage' && type !== 'amount') {
+    return { isValid: false, error: 'Discount type must be percentage or amount' };
+  }
+
+  if (value === '' || value === null || value === undefined) {
+    return { isValid: true };
+  }
+
+  const num = typeof value === 'string' ? Number(value) : value;
+
+  if (typeof num !== 'number' || !Number.isFinite(num)) {
+    return { isValid: false, error: 'Discount must be a valid number' };
+  }
+
+  if (num < 0) {
+    return { isValid: false, error: 'Discount cannot be negative' };
+  }
+
+  if (type === 'percentage' && num > 100) {
+    return { isValid: false, error: 'Discount cannot exceed 100%' };
+  }
+
+  if (type === 'amount' && num > subtotal) {
+    return { isValid: false, error: 'Discount cannot exceed the subtotal' };
+  }
+
+  return { isValid: true };
+}
+
 // Helper to check if a form field has an error
 export function hasError(result: ValidationResult): boolean {
   return !result.isValid;
