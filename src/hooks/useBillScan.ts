@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import type { DiscountType } from '@/types';
 
 const COOLDOWN_MS = 6_000;
 
@@ -8,6 +9,9 @@ export interface ExtractedBill {
   items: Array<{ name: string; price: number; quantity: number }>;
   tax_amount: number;
   service_amount: number;
+  // Optional: older responses (or a cached client) may not include them.
+  discount_type?: DiscountType;
+  discount_value?: number;
 }
 
 interface UseBillScanReturn {
