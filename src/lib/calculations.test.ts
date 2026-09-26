@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest'
-import { calculateParticipantBills, calculatePercentages } from './calculations'
+import {
+  allocateProportionally,
+  calculateParticipantBills,
+  calculatePercentages,
+  computeSessionTotals,
+  resolveDiscountAmount,
+} from './calculations'
 import type { Session, ItemWithAssignments, Participant } from '@/types'
 
 describe('calculatePercentages', () => {
@@ -7,6 +13,25 @@ describe('calculatePercentages', () => {
     const result = calculatePercentages(100, 10, 5)
     expect(result.taxPercentage).toBe(10)
     expect(result.servicePercentage).toBe(5)
+  })
+
+  it('should keep fractional rates like 7.5% unchanged', () => {
+    const result = calculatePercentages(200_000, 15_000, 11_000)
+    expect(result.taxPercentage).toBe(7.5)
+    expect(result.servicePercentage).toBe(5.5)
+  })
+
+  it('should use the discounted subtotal as the base', () => {
+    // Reference receipt: 1.287.000 − 15% (193.050) = 1.093.950
+    const result = calculatePercentages(1_287_000, 117_053, 76_577, 193_050)
+    expect(result.servicePercentage).toBe(7) // 76.577 / 1.093.950
+    expect(result.taxPercentage).toBe(10.7) // 117.053 / 1.093.950
+  })
+
+  it('should return 0% when the discount consumes the whole subtotal', () => {
+    const result = calculatePercentages(100, 10, 5, 100)
+    expect(result.taxPercentage).toBe(0)
+    expect(result.servicePercentage).toBe(0)
   })
 
   it('should handle zero subtotal', () => {
@@ -22,6 +47,115 @@ describe('calculatePercentages', () => {
   })
 })
 
+describe('resolveDiscountAmount', () => {
+  it('should resolve a percentage of the subtotal', () => {
+    expect(resolveDiscountAmount(1_287_000, 'percentage', 15)).toBe(193_050)
+  })
+
+  it('should round a percentage to 2 decimals', () => {
+    // 15% of 1.287.001 = 193.050,15
+    expect(resolveDiscountAmount(1_287_001, 'percentage', 15)).toBe(193_050.15)
+    // 12.5% of 1.001 = 125,125
+    expect(resolveDiscountAmount(1_001, 'percentage', 12.5)).toBe(125.13)
+  })
+
+  it('should pass a fixed amount through', () => {
+    expect(resolveDiscountAmount(100_000, 'amount', 25_000)).toBe(25_000)
+  })
+
+  it('should clamp to the subtotal', () => {
+    expect(resolveDiscountAmount(100_000, 'amount', 150_000)).toBe(100_000)
+    expect(resolveDiscountAmount(100_000, 'percentage', 120)).toBe(100_000)
+  })
+
+  it('should return 0 for zero, negative or non-finite input', () => {
+    expect(resolveDiscountAmount(100_000, 'percentage', 0)).toBe(0)
+    expect(resolveDiscountAmount(100_000, 'amount', -5)).toBe(0)
+    expect(resolveDiscountAmount(100_000, 'amount', NaN)).toBe(0)
+    expect(resolveDiscountAmount(0, 'percentage', 15)).toBe(0)
+  })
+})
+
+describe('computeSessionTotals', () => {
+  it('should match the reference receipt', () => {
+    const totals = computeSessionTotals({
+      subtotal: 1_287_000,
+      discount_type: 'percentage',
+      discount_value: 15,
+      service_amount: 76_577,
+      tax_amount: 117_053,
+    })
+    expect(totals).toEqual({
+      discount_amount: 193_050,
+      grand_total: 1_287_580,
+      service_percentage: 7,
+      tax_percentage: 10.7,
+    })
+  })
+
+  it('should leave totals unchanged with no discount', () => {
+    const totals = computeSessionTotals({
+      subtotal: 100_000,
+      discount_type: 'percentage',
+      discount_value: 0,
+      service_amount: 5_000,
+      tax_amount: 10_500,
+    })
+    expect(totals.discount_amount).toBe(0)
+    expect(totals.grand_total).toBe(115_500)
+  })
+
+  it('should handle a 100% discount', () => {
+    const totals = computeSessionTotals({
+      subtotal: 100_000,
+      discount_type: 'percentage',
+      discount_value: 100,
+      service_amount: 0,
+      tax_amount: 0,
+    })
+    expect(totals.discount_amount).toBe(100_000)
+    expect(totals.grand_total).toBe(0)
+    expect(totals.tax_percentage).toBe(0)
+    expect(totals.service_percentage).toBe(0)
+  })
+})
+
+describe('allocateProportionally', () => {
+  it('should split into integers that sum exactly to the total', () => {
+    const parts = allocateProportionally(100, [1, 1, 1])
+    expect(parts).toEqual([34, 33, 33])
+  })
+
+  it('should give leftover rupiah to the largest fractional parts', () => {
+    // raw: 1.4, 3.5, 5.1 -> floors 1, 3, 5, one rupiah left for the .5
+    expect(allocateProportionally(10, [14, 35, 51])).toEqual([1, 4, 5])
+  })
+
+  it('should break ties by larger weight, then lower index', () => {
+    expect(allocateProportionally(1, [1, 1])).toEqual([1, 0])
+    // 7 over [2, 2, 3] -> raw 2, 2, 3: no remainder
+    expect(allocateProportionally(7, [2, 2, 3])).toEqual([2, 2, 3])
+  })
+
+  it('should return zeros when no weight is positive', () => {
+    expect(allocateProportionally(100, [0, 0])).toEqual([0, 0])
+    expect(allocateProportionally(100, [])).toEqual([])
+  })
+
+  it('should give nothing to zero weights', () => {
+    expect(allocateProportionally(10, [0, 3])).toEqual([0, 10])
+  })
+
+  it('should round a fractional total first', () => {
+    expect(allocateProportionally(10.4, [1, 1])).toEqual([5, 5])
+  })
+
+  it('should allocate to 2 decimals when asked', () => {
+    expect(allocateProportionally(10, [1, 1, 1], 2)).toEqual([3.34, 3.33, 3.33])
+    expect(allocateProportionally(117_053, [1, 1], 2)).toEqual([58_526.5, 58_526.5])
+  })
+})
+
 describe('calculateParticipantBills', () => {
   const mockSession: Session = {
     id: '1',
@@ -33,8 +167,12 @@ describe('calculateParticipantBills', () => {
     grand_total: 115,
     tax_percentage: 10,
     service_percentage: 5,
+    discount_type: 'percentage',
+    discount_value: 0,
+    discount_amount: 0,
     receipt_image_url: null,
     status: 'active',
+    created_by: null,
   }
 
   const mockParticipants: Participant[] = [
@@ -299,6 +437,7 @@ describe('calculateParticipantBills', () => {
     expect(alice.service_share).toBe(3.75)
     expect(bob.tax_share).toBe(2.5)
     expect(bob.service_share).toBe(1.25)
+    expect(alice.total + bob.total).toBe(mockSession.grand_total)
   })
 
   it('should round monetary fields to 2 decimal places', () => {
@@ -324,8 +463,97 @@ describe('calculateParticipantBills', () => {
     expect(alice.subtotal).toBe(3.33)
     // Every monetary field should have at most 2 decimal places.
     for (const bill of bills) {
-      expect(bill.subtotal).toBe(Math.round(bill.subtotal * 100) / 100)
-      expect(bill.total).toBe(Math.round(bill.total * 100) / 100)
+      for (const field of ['subtotal', 'discount_share', 'service_share', 'tax_share', 'total'] as const) {
+        expect(bill[field]).toBe(Math.round(bill[field] * 100) / 100)
+      }
     }
+  })
+
+  it('should split an odd amount three ways exactly', () => {
+    const session: Session = { ...mockSession, subtotal: 100_000, tax_amount: 10_001, service_amount: 5_002, grand_total: 115_003 }
+    const participants: Participant[] = [
+      ...mockParticipants,
+      { id: 'p3', session_id: '1', name: 'Cara', created_at: '2024-01-01' } as Participant,
+    ]
+    const items: ItemWithAssignments[] = [
+      {
+        id: 'i1',
+        session_id: '1',
+        name: 'Platter',
+        price: 100_000,
+        quantity: 1,
+        created_at: '2024-01-01',
+        assignments: ['p1', 'p2', 'p3'].map((pid, n) => (
+          { id: `a${n}`, item_id: 'i1', participant_id: pid, split_type: 'equal' as const, percentage: null, unit_count: null, created_at: '2024-01-01' }
+        )),
+      },
+    ]
+
+    const bills = calculateParticipantBills(session, items, participants)
+
+    // 100.000 / 3 = 33.333,33… -> one extra cent goes to the first participant
+    expect(bills.map(b => b.subtotal)).toEqual([33_333.34, 33_333.33, 33_333.33])
+    // tax 10.001 / 3 = 3.333,666… -> 3.333,67 + 3.333,67 + 3.333,66
+    expect(bills.map(b => b.tax_share)).toEqual([3333.67, 3333.67, 3333.66])
+    // service 5.002 / 3 = 1.667,333… -> 1.667,34 + 1.667,33 + 1.667,33
+    expect(bills.map(b => b.service_share)).toEqual([1667.34, 1667.33, 1667.33])
+    expect(bills.reduce((s, b) => s + b.total, 0)).toBeCloseTo(115_003, 2)
+  })
+
+  it('should distribute the discount proportionally (reference receipt, 2 people)', () => {
+    const session: Session = {
+      ...mockSession,
+      subtotal: 1_287_000,
+      discount_type: 'percentage',
+      discount_value: 15,
+      discount_amount: 193_050,
+      service_amount: 76_577,
+      tax_amount: 117_053,
+      grand_total: 1_287_580,
+    }
+    const items: ItemWithAssignments[] = [
+      {
+        id: 'i1',
+        session_id: '1',
+        name: 'Everything',
+        price: 1_287_000,
+        quantity: 1,
+        created_at: '2024-01-01',
+        assignments: [
+          { id: 'a1', item_id: 'i1', participant_id: 'p1', split_type: 'equal', percentage: null, unit_count: null, created_at: '2024-01-01' },
+          { id: 'a2', item_id: 'i1', participant_id: 'p2', split_type: 'equal', percentage: null, unit_count: null, created_at: '2024-01-01' },
+        ],
+      },
+    ]
+
+    const [alice, bob] = calculateParticipantBills(session, items, mockParticipants)
+
+    expect(alice).toMatchObject({ subtotal: 643_500, discount_share: 96_525, service_share: 38_288.5, tax_share: 58_526.5, total: 643_790 })
+    expect(bob).toMatchObject({ subtotal: 643_500, discount_share: 96_525, service_share: 38_288.5, tax_share: 58_526.5, total: 643_790 })
+    expect(alice.total + bob.total).toBe(1_287_580)
+  })
+
+  it('should give a participant with no items no discount', () => {
+    const session: Session = { ...mockSession, discount_amount: 20, grand_total: 95 }
+    const items: ItemWithAssignments[] = [
+      {
+        id: 'i1',
+        session_id: '1',
+        name: 'Solo',
+        price: 100,
+        quantity: 1,
+        created_at: '2024-01-01',
+        assignments: [
+          { id: 'a1', item_id: 'i1', participant_id: 'p1', split_type: 'equal', percentage: null, unit_count: null, created_at: '2024-01-01' },
+        ],
+      },
+    ]
+
+    const [alice, bob] = calculateParticipantBills(session, items, mockParticipants)
+
+    expect(alice.discount_share).toBe(20)
+    expect(alice.total).toBe(95)
+    expect(bob.discount_share).toBe(0)
+    expect(bob.total).toBe(0)
   })
 })

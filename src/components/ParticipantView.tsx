@@ -8,8 +8,8 @@ import type {
   ParticipantBill,
   SessionBankAccount,
 } from '@/types';
-import { formatIDR, formatNumber } from '@/lib/format';
-import { formatTransferBlock } from '@/lib/bankTransferText';
+import { formatDiscountLabel, formatIDR, formatNumber, formatPercent } from '@/lib/format';
+import { formatDiscountLine, formatTransferBlock } from '@/lib/bankTransferText';
 import { BankInfoCard } from '@/components/BankInfoCard';
 import { MarkAsPaidButton } from '@/components/MarkAsPaidButton';
 
@@ -89,7 +89,7 @@ export function ParticipantView({
     const text = `My Bill - ${participant.name}
 ${itemLines}
   ─────────────
-  Subtotal: ${formatIDR(bill.subtotal)}
+  Subtotal: ${formatIDR(bill.subtotal)}${formatDiscountLine(bill)}
   Tax: ${formatIDR(bill.tax_share)}
   Service: ${formatIDR(bill.service_share)}
   ─────────────
@@ -163,6 +163,12 @@ ${itemLines}
               <span className="text-text-secondary">Subtotal</span>
               <span className="shrink-0 text-text-primary">{formatIDR(bill.subtotal)}</span>
             </div>
+            {bill.discount_share > 0 && (
+              <div className="flex justify-between gap-2">
+                <span className="text-text-secondary">Discount</span>
+                <span className="shrink-0 text-text-primary">−{formatIDR(bill.discount_share)}</span>
+              </div>
+            )}
             <div className="flex justify-between gap-2">
               <span className="text-text-secondary">Tax</span>
               <span className="shrink-0 text-text-primary">{formatIDR(bill.tax_share)}</span>
@@ -304,12 +310,18 @@ ${itemLines}
             <span className="text-text-secondary">Subtotal</span>
             <span className="shrink-0 text-text-primary">{formatIDR(session.subtotal)}</span>
           </div>
+          {session.discount_amount > 0 && (
+            <div className="flex justify-between gap-2">
+              <span className="text-text-secondary">{formatDiscountLabel(session)}</span>
+              <span className="shrink-0 text-text-primary">−{formatIDR(session.discount_amount)}</span>
+            </div>
+          )}
           <div className="flex justify-between gap-2">
-            <span className="text-text-secondary">Tax ({formatNumber(session.tax_percentage)}%)</span>
+            <span className="text-text-secondary">Tax ({formatPercent(session.tax_percentage)}%)</span>
             <span className="shrink-0 text-text-primary">{formatIDR(session.tax_amount)}</span>
           </div>
           <div className="flex justify-between gap-2">
-            <span className="text-text-secondary">Service ({formatNumber(session.service_percentage)}%)</span>
+            <span className="text-text-secondary">Service ({formatPercent(session.service_percentage)}%)</span>
             <span className="shrink-0 text-text-primary">{formatIDR(session.service_amount)}</span>
           </div>
           <div className="flex justify-between font-bold pt-2 border-t border-border-subtle gap-2 text-text-primary">

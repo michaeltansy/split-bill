@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { createServerClient, createRouteHandlerClient } from '@/lib/supabase';
+import { buildSessionMoney } from '@/lib/sessionTotals';
 import type { CreateSessionRequest } from '@/types';
 
 const ACCOUNT_NUMBER_RE = /^[0-9]{8,20}$/;
@@ -141,15 +142,17 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Derived totals (discount amount, grand total, percentages) are always
+    // computed here; any the client sends are ignored.
+    const money = buildSessionMoney(body);
+    if (!money.ok) {
+      return NextResponse.json({ error: money.error, code: money.code }, { status: 400 });
+    }
+
     const { data: session, error: sessionError } = await supabase
       .from('sessions')
       .insert({
-        subtotal: body.subtotal || 0,
-        tax_amount: body.tax_amount || 0,
-        service_amount: body.service_amount || 0,
-        grand_total: body.grand_total || 0,
-        tax_percentage: body.tax_percentage || 0,
-        service_percentage: body.service_percentage || 0,
+        ...money.values,
         receipt_image_url: body.receipt_image_url || null,
         created_by: user.id,
       })

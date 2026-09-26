@@ -34,6 +34,7 @@ function makeBill(name: string, total: number): ParticipantBill {
     participant: { id: name, session_id: 's1', name, created_at: '2024-01-01', is_paid: false, paid_at: null },
     items: [],
     subtotal: total,
+    discount_share: 0,
     tax_share: 0,
     service_share: 0,
     total,
@@ -112,5 +113,55 @@ describe('BillSummary Copy All', () => {
   it('does not render the Copy All button when there are no bills', () => {
     render(<BillSummary bills={[]} totalAssigned={0} totalUnassigned={0} grandTotal={0} bankAccount={null} />)
     expect(screen.queryByRole('button', { name: 'Copy All' })).not.toBeInTheDocument()
+  })
+})
+
+describe('BillSummary discount row', () => {
+  const discounted: ParticipantBill = {
+    ...makeBill('Alice', 643_790),
+    subtotal: 643_500,
+    discount_share: 96_525,
+    service_share: 38_288.5,
+    tax_share: 58_526.5,
+  }
+
+  it('shows the discount row when the participant has a discount share', () => {
+    render(
+      <BillSummary bills={[discounted]} totalAssigned={643_500} totalUnassigned={0} grandTotal={643_790} bankAccount={null} />
+    )
+    fireEvent.click(screen.getByText('Alice'))
+    expect(screen.getByText('Discount')).toBeInTheDocument()
+    expect(screen.getByText('−IDR 96.525')).toBeInTheDocument()
+  })
+
+  it('hides the discount row when there is no discount', () => {
+    render(
+      <BillSummary bills={[makeBill('Bob', 30000)]} totalAssigned={30000} totalUnassigned={0} grandTotal={30000} bankAccount={null} />
+    )
+    fireEvent.click(screen.getByText('Bob'))
+    expect(screen.queryByText('Discount')).not.toBeInTheDocument()
+  })
+
+  it('includes the discount in the copied bill text', async () => {
+    render(
+      <BillSummary bills={[discounted]} totalAssigned={643_500} totalUnassigned={0} grandTotal={643_790} bankAccount={null} />
+    )
+    fireEvent.click(screen.getByText('Alice'))
+    fireEvent.click(screen.getByRole('button', { name: 'Copy Bill Details' }))
+
+    await waitFor(() => expect(mockWriteText).toHaveBeenCalledTimes(1))
+    const text = mockWriteText.mock.calls[0][0] as string
+    expect(text).toContain('Subtotal: IDR 643.500\n  Discount: −IDR 96.525\n  Tax:')
+  })
+
+  it('leaves the copied bill text unchanged without a discount', async () => {
+    render(
+      <BillSummary bills={[makeBill('Bob', 30000)]} totalAssigned={30000} totalUnassigned={0} grandTotal={30000} bankAccount={null} />
+    )
+    fireEvent.click(screen.getByText('Bob'))
+    fireEvent.click(screen.getByRole('button', { name: 'Copy Bill Details' }))
+
+    await waitFor(() => expect(mockWriteText).toHaveBeenCalledTimes(1))
+    expect(mockWriteText.mock.calls[0][0]).not.toContain('Discount')
   })
 })

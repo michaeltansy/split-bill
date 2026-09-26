@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { GoogleGenerativeAI, SchemaType, type Schema } from '@google/generative-ai';
 import { ocrRatelimit } from '@/lib/ratelimit';
+import { sanitiseDiscount } from '@/lib/ocrDiscount';
 
 const PROMPT = `You are a receipt parser. Analyse this receipt image and return JSON matching the provided schema.
 
@@ -10,6 +11,7 @@ Rules:
 - Indonesian thousands separators: "58,000" = 58000, "250.635" = 250635. Never interpret as decimals.
 - tax_amount is the total tax (PB1, PPN, etc.). Use 0 if not present.
 - service_amount is the service charge / tip line. Use 0 if not present.
+- discount is a bill-level reduction line (DISCOUNT, DISKON, PROMO, POTONGAN). If the line shows a percent (e.g. "DISCOUNT 15%"), return discount_type "percentage" and the percent number (15). Otherwise return discount_type "amount" and the absolute value as a positive number. If there is no discount, return discount_type "percentage" and discount_value 0. Never list the discount as an item.
 - Truncate item names to 100 characters.
 - Skip non-item lines (subtotal, total, change, payment lines).`;
 
@@ -30,6 +32,8 @@ const RESPONSE_SCHEMA: Schema = {
     },
     tax_amount: { type: SchemaType.NUMBER },
     service_amount: { type: SchemaType.NUMBER },
+    discount_type: { type: SchemaType.STRING, format: 'enum', enum: ['percentage', 'amount'] },
+    discount_value: { type: SchemaType.NUMBER },
   },
   required: ['items', 'tax_amount', 'service_amount'],
 };
@@ -149,7 +153,9 @@ export async function POST(request: NextRequest) {
       ? Math.max(0, Number(parsed.service_amount))
       : 0;
 
-    return NextResponse.json({ items, tax_amount, service_amount });
+    const discount = sanitiseDiscount(parsed.discount_type, parsed.discount_value);
+
+    return NextResponse.json({ items, tax_amount, service_amount, ...discount });
   } catch (error) {
     const status = (error as { status?: number })?.status;
     if (status === 429) {

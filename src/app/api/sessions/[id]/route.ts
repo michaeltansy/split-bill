@@ -1,5 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase';
+import { buildSessionMoney } from '@/lib/sessionTotals';
+
+// Fields a client may change. Everything else (grand_total, percentages,
+// discount_amount, created_by, expires_at, ...) is dropped or derived here.
+const MONEY_FIELDS = [
+  'subtotal',
+  'tax_amount',
+  'service_amount',
+  'discount_type',
+  'discount_value',
+] as const;
+const EDITABLE_FIELDS = [...MONEY_FIELDS, 'status'] as const;
 
 export async function GET(
   request: NextRequest,
@@ -91,9 +103,49 @@ export async function PATCH(
     const supabase = createServerClient();
     const body = await request.json();
 
+    const patch: Record<string, unknown> = {};
+    for (const field of EDITABLE_FIELDS) {
+      if (body && Object.prototype.hasOwnProperty.call(body, field)) {
+        patch[field] = body[field];
+      }
+    }
+
+    if (Object.keys(patch).length === 0) {
+      return NextResponse.json(
+        { error: 'No editable fields provided', code: 'INVALID_INPUT' },
+        { status: 400 }
+      );
+    }
+
+    let update: Record<string, unknown> = patch;
+
+    if (MONEY_FIELDS.some((field) => field in patch)) {
+      // Merge over the stored row so derived totals always reflect the full
+      // set of money inputs, not just the ones in this request.
+      const { data: current, error: currentError } = await supabase
+        .from('sessions')
+        .select('subtotal, tax_amount, service_amount, discount_type, discount_value')
+        .eq('id', id)
+        .single();
+
+      if (currentError || !current) {
+        return NextResponse.json(
+          { error: 'Session not found', code: 'SESSION_NOT_FOUND' },
+          { status: 404 }
+        );
+      }
+
+      const money = buildSessionMoney({ ...current, ...patch });
+      if (!money.ok) {
+        return NextResponse.json({ error: money.error, code: money.code }, { status: 400 });
+      }
+
+      update = { ...patch, ...money.values };
+    }
+
     const { data, error } = await supabase
       .from('sessions')
-      .update(body)
+      .update(update)
       .eq('id', id)
       .select()
       .single();

@@ -13,6 +13,9 @@ const baseSession: Session = {
   grand_total: 115,
   tax_percentage: 10,
   service_percentage: 5,
+  discount_type: 'percentage',
+  discount_value: 0,
+  discount_amount: 0,
   receipt_image_url: null,
   status: 'active',
   created_by: 'user-1',
@@ -94,6 +97,39 @@ describe('useBillCalculation', () => {
       useBillCalculation(baseSession, items, [participant])
     )
     expect(result.current.totalUnassigned).toBe(0)
+    expect(result.current.isValid).toBe(true)
+  })
+
+  it('isValid is true for a fully assigned bill with a discount', () => {
+    // Reference receipt: 1.287.000 − 15% + service 76.577 + PB1 117.053 = 1.287.580
+    const session: Session = {
+      ...baseSession,
+      subtotal: 1_287_000,
+      discount_type: 'percentage',
+      discount_value: 15,
+      discount_amount: 193_050,
+      service_amount: 76_577,
+      tax_amount: 117_053,
+      grand_total: 1_287_580,
+    }
+    const bob: Participant = { ...participant, id: 'p2', name: 'Bob' }
+    const items: ItemWithAssignments[] = [
+      {
+        id: 'i1',
+        session_id: 's1',
+        name: 'Everything',
+        price: 1_287_000,
+        quantity: 1,
+        created_at: '2024-01-01',
+        assignments: [
+          makeAssignment({ percentage: null }),
+          makeAssignment({ id: 'a2', participant_id: 'p2', percentage: null }),
+        ],
+      },
+    ]
+    const { result } = renderHook(() =>
+      useBillCalculation(session, items, [participant, bob])
+    )
     expect(result.current.isValid).toBe(true)
   })
 

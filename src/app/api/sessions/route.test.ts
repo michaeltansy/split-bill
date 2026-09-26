@@ -26,6 +26,8 @@ function makeRequest(body: unknown) {
   })
 }
 
+let lastSessionInsert: Record<string, unknown> | null = null
+
 function setupSessionsTable({
   data = { id: 'session-1' },
   sessionError = null,
@@ -38,9 +40,12 @@ function setupSessionsTable({
   mockFrom.mockImplementation((table: string) => {
     if (table === 'sessions') {
       return {
-        insert: () => ({
+        insert: (row: Record<string, unknown>) => ({
           select: () => ({
-            single: () => Promise.resolve({ data: sessionError ? null : data, error: sessionError }),
+            single: () => {
+              lastSessionInsert = row
+              return Promise.resolve({ data: sessionError ? null : data, error: sessionError })
+            },
           }),
         }),
         delete: () => ({
@@ -183,6 +188,52 @@ describe('POST /api/sessions', () => {
     expect(res.status).toBe(201)
     const body = await res.json()
     expect(body.id).toBe('session-1')
+  })
+
+  it('computes discount and totals server-side, ignoring client-sent derived values', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: { id: 'user-1' } } })
+    setupSessionsTable()
+    lastSessionInsert = null
+
+    const res = await POST(
+      makeRequest({
+        subtotal: 1_287_000,
+        tax_amount: 117_053,
+        service_amount: 76_577,
+        discount_type: 'percentage',
+        discount_value: 15,
+        grand_total: 1,
+        tax_percentage: 99,
+        service_percentage: 99,
+        discount_amount: 5,
+      })
+    )
+
+    expect(res.status).toBe(201)
+    expect(lastSessionInsert).toMatchObject({
+      subtotal: 1_287_000,
+      discount_type: 'percentage',
+      discount_value: 15,
+      discount_amount: 193_050,
+      grand_total: 1_287_580,
+      tax_percentage: 10.7,
+      service_percentage: 7,
+      created_by: 'user-1',
+    })
+  })
+
+  it('returns 400 INVALID_DISCOUNT for a discount above the subtotal', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: { id: 'user-1' } } })
+    setupSessionsTable()
+
+    const res = await POST(
+      makeRequest({ subtotal: 100_000, discount_type: 'amount', discount_value: 150_000 })
+    )
+
+    expect(res.status).toBe(400)
+    const body = await res.json()
+    expect(body.code).toBe('INVALID_DISCOUNT')
+    expect(mockFrom).not.toHaveBeenCalled()
   })
 
   it('returns 400 when the session insert fails', async () => {
