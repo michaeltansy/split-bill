@@ -6,9 +6,12 @@ import Link from 'next/link';
 import { useToast } from '@/components/Toast';
 import { AccountMenu } from '@/components/AccountMenu';
 import { BankInfoForm } from '@/components/BankInfoForm';
+import { DiscountInput } from '@/components/DiscountInput';
 import { useBillScan } from '@/hooks/useBillScan';
-import { formatIDR } from '@/lib/format';
-import type { BankInfoInput } from '@/types';
+import { computeSessionTotals } from '@/lib/calculations';
+import { formatDiscountLabel, formatIDR } from '@/lib/format';
+import { validateDiscount } from '@/lib/validation';
+import type { BankInfoInput, DiscountType } from '@/types';
 
 const OCR_ENABLED = process.env.NEXT_PUBLIC_OCR_ENABLED === 'true';
 
@@ -30,11 +33,18 @@ export default function Home() {
   const [items, setItems] = useState<DraftItem[]>(() => [newDraftItem()]);
   const [taxAmount, setTaxAmount] = useState('');
   const [serviceAmount, setServiceAmount] = useState('');
+  const [discountType, setDiscountType] = useState<DiscountType>('percentage');
+  const [discountValue, setDiscountValue] = useState('');
   const [bankAccount, setBankAccount] = useState<BankInfoInput | null>(null);
   const [isCreating, setIsCreating] = useState(false);
 
   const handleBankChange = useCallback((value: BankInfoInput | null) => {
     setBankAccount(value);
+  }, []);
+
+  const handleDiscountChange = useCallback((type: DiscountType, value: string) => {
+    setDiscountType(type);
+    setDiscountValue(value);
   }, []);
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -71,11 +81,25 @@ export default function Home() {
     );
     if (result.tax_amount > 0) setTaxAmount(String(result.tax_amount));
     if (result.service_amount > 0) setServiceAmount(String(result.service_amount));
+    if (result.discount_type && (result.discount_value ?? 0) > 0) {
+      setDiscountType(result.discount_type);
+      setDiscountValue(String(result.discount_value));
+    }
     addToast(`Filled ${result.items.length} item(s). Review and edit before creating.`, 'success');
   };
 
-  const { parsedItems, subtotal, taxNum, serviceNum, grandTotal, taxPct, servicePct } =
-    useMemo(() => {
+  const {
+    parsedItems,
+    subtotal,
+    taxNum,
+    serviceNum,
+    discountNum,
+    discountAmount,
+    discountError,
+    grandTotal,
+    taxPct,
+    servicePct,
+  } = useMemo(() => {
       const parsed = items
         .map((i) => ({
           name: i.name.trim(),
@@ -87,17 +111,30 @@ export default function Home() {
       const sub = parsed.reduce((sum, i) => sum + i.price * i.quantity, 0);
       const tax = parseFloat(taxAmount) || 0;
       const service = parseFloat(serviceAmount) || 0;
+      const discount = parseFloat(discountValue) || 0;
+      const validation = validateDiscount(discountType, discountValue, sub);
+      const totals = computeSessionTotals({
+        subtotal: sub,
+        discount_type: discountType,
+        discount_value: discount,
+        service_amount: service,
+        tax_amount: tax,
+      });
 
       return {
         parsedItems: parsed,
         subtotal: sub,
         taxNum: tax,
         serviceNum: service,
-        grandTotal: sub + tax + service,
-        taxPct: sub > 0 ? (tax / sub) * 100 : 0,
-        servicePct: sub > 0 ? (service / sub) * 100 : 0,
+        discountNum: discount,
+        discountAmount: totals.discount_amount,
+        // Only flag the discount once there is a subtotal to compare it to.
+        discountError: validation.isValid || sub === 0 ? undefined : validation.error,
+        grandTotal: totals.grand_total,
+        taxPct: totals.tax_percentage,
+        servicePct: totals.service_percentage,
       };
-    }, [items, taxAmount, serviceAmount]);
+    }, [items, taxAmount, serviceAmount, discountType, discountValue]);
 
   const updateItem = (id: string, patch: Partial<Omit<DraftItem, 'id'>>) => {
     setItems((prev) => prev.map((i) => (i.id === id ? { ...i, ...patch } : i)));
@@ -109,7 +146,7 @@ export default function Home() {
     setItems((prev) => (prev.length === 1 ? [newDraftItem()] : prev.filter((i) => i.id !== id)));
   };
 
-  const canSubmit = parsedItems.length > 0 && !isCreating;
+  const canSubmit = parsedItems.length > 0 && !discountError && !isCreating;
 
   const handleCreateSession = async () => {
     if (!canSubmit) return;
@@ -122,9 +159,8 @@ export default function Home() {
           subtotal,
           tax_amount: taxNum,
           service_amount: serviceNum,
-          grand_total: grandTotal,
-          tax_percentage: Math.round(taxPct * 100) / 100,
-          service_percentage: Math.round(servicePct * 100) / 100,
+          discount_type: discountType,
+          discount_value: discountNum,
           bank_account: bankAccount,
         }),
       });
@@ -164,7 +200,7 @@ export default function Home() {
         </div>
         <header className="mb-8 text-center">
           <h1 className="text-4xl font-bold mb-2 text-text-primary">Split Bill</h1>
-          <p className="text-text-primary">Add items, tax, and service fee — then create your session.</p>
+          <p className="text-text-primary">Add items, discount, tax, and service fee — then create your session.</p>
         </header>
 
         {OCR_ENABLED && (
@@ -267,7 +303,17 @@ export default function Home() {
         </section>
 
         <section className="bg-surface-card rounded-2xl shadow-sm p-6 mb-6">
-          <h2 className="text-lg font-semibold mb-4 text-text-primary">Tax & Service</h2>
+          <h2 className="text-lg font-semibold mb-4 text-text-primary">Discount, Tax & Service</h2>
+          <div className="mb-4">
+            <DiscountInput
+              type={discountType}
+              value={discountValue}
+              resolvedAmount={discountAmount}
+              onChange={handleDiscountChange}
+              error={discountError}
+              disabled={isCreating}
+            />
+          </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-text-primary mb-1">
@@ -324,13 +370,19 @@ export default function Home() {
               <dt>Subtotal</dt>
               <dd className="font-medium">{formatIDR(subtotal)}</dd>
             </div>
-            <div className="flex justify-between">
-              <dt>Tax</dt>
-              <dd className="font-medium">{formatIDR(taxNum)}</dd>
-            </div>
+            {discountAmount > 0 && (
+              <div className="flex justify-between">
+                <dt>{formatDiscountLabel({ discount_type: discountType, discount_value: discountNum })}</dt>
+                <dd className="font-medium">−{formatIDR(discountAmount)}</dd>
+              </div>
+            )}
             <div className="flex justify-between">
               <dt>Service</dt>
               <dd className="font-medium">{formatIDR(serviceNum)}</dd>
+            </div>
+            <div className="flex justify-between">
+              <dt>Tax</dt>
+              <dd className="font-medium">{formatIDR(taxNum)}</dd>
             </div>
             <div className="flex justify-between pt-2 border-t border-border-subtle text-base">
               <dt className="font-semibold">Grand Total</dt>

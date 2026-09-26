@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { formatNumber, formatIDR } from './format'
+import { formatNumber, formatIDR, formatPercent, formatDiscountLabel } from './format'
 
 describe('formatNumber', () => {
   it('formats zero', () => {
@@ -45,5 +45,30 @@ describe('formatIDR', () => {
   it('handles null and undefined', () => {
     expect(formatIDR(null)).toBe('IDR 0')
     expect(formatIDR(undefined)).toBe('IDR 0')
+  })
+})
+
+describe('formatPercent', () => {
+  it('keeps up to 2 decimals with a comma separator', () => {
+    expect(formatPercent(7.5)).toBe('7,5')
+    expect(formatPercent(10.7)).toBe('10,7')
+    expect(formatPercent(12.345)).toBe('12,35')
+    expect(formatPercent(10)).toBe('10')
+  })
+
+  it('returns "0" for missing or non-finite values', () => {
+    expect(formatPercent(null)).toBe('0')
+    expect(formatPercent(NaN)).toBe('0')
+  })
+})
+
+describe('formatDiscountLabel', () => {
+  it('shows the percentage for a percentage discount', () => {
+    expect(formatDiscountLabel({ discount_type: 'percentage', discount_value: 15 })).toBe('Discount (15%)')
+    expect(formatDiscountLabel({ discount_type: 'percentage', discount_value: 7.5 })).toBe('Discount (7,5%)')
+  })
+
+  it('shows a plain label for a fixed amount', () => {
+    expect(formatDiscountLabel({ discount_type: 'amount', discount_value: 50_000 })).toBe('Discount')
   })
 })
