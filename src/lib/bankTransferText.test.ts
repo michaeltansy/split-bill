@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { formatTransferBlock, formatAllParticipantsText, formatDiscountLine } from './bankTransferText'
+import { formatTransferBlock, formatAllParticipantsText, formatDiscountLine, formatBillBreakdown } from './bankTransferText'
 import type { ParticipantBill, SessionBankAccount } from '@/types'
 
 const mockBank: SessionBankAccount = {
@@ -100,5 +100,58 @@ describe('formatDiscountLine', () => {
 
   it('formats the discount share on its own line', () => {
     expect(formatDiscountLine({ ...makeBill('Alice', 1000), discount_share: 96_525 })).toBe('\n  Discount: −IDR 96.525')
+  })
+})
+
+function makeDetailedBill(name: string): ParticipantBill {
+  const item = { id: `${name}-i1`, session_id: 's1', name: 'Soy Sauce Chicken', price: 118_000, quantity: 1, created_at: '2024-01-01' }
+  return {
+    ...makeBill(name, 107_000),
+    items: [{ item, share_amount: 118_000, share_percentage: 100, split_type: 'equal', unit_count: null, shared_with: [] }],
+    subtotal: 118_000,
+    discount_share: 17_700,
+    tax_share: 6_700,
+    service_share: 0,
+    total: 107_000,
+  }
+}
+
+describe('formatBillBreakdown', () => {
+  it('lists items then subtotal, discount, tax and service', () => {
+    expect(formatBillBreakdown(makeDetailedBill('Alice'))).toBe(
+      [
+        '  - Soy Sauce Chicken: IDR 118.000',
+        '  Subtotal: IDR 118.000',
+        '  Discount: −IDR 17.700',
+        '  Tax: IDR 6.700',
+        '  Service: IDR 0',
+      ].join('\n')
+    )
+  })
+
+  it('omits the discount line when there is none', () => {
+    const bill = { ...makeDetailedBill('Alice'), discount_share: 0 }
+    expect(formatBillBreakdown(bill)).not.toContain('Discount')
+  })
+})
+
+describe('formatAllParticipantsText breakdown', () => {
+  it("includes each participant's breakdown under their total", () => {
+    const result = formatAllParticipantsText([makeDetailedBill('Alice'), makeBill('Bob', 0)], 107_000, null)
+    expect(result).toBe(
+      [
+        'Split Bill Summary',
+        '  Alice: IDR 107.000',
+        '    - Soy Sauce Chicken: IDR 118.000',
+        '    Subtotal: IDR 118.000',
+        '    Discount: −IDR 17.700',
+        '    Tax: IDR 6.700',
+        '    Service: IDR 0',
+        '',
+        '  Bob: IDR 0',
+        '  ─────────────',
+        '  Grand Total: IDR 107.000',
+      ].join('\n')
+    )
   })
 })

@@ -4,7 +4,7 @@ import { useState } from 'react';
 import type { ParticipantBill, Participant, SessionBankAccount } from '@/types';
 import { formatIDR, formatNumber } from '@/lib/format';
 import {
-  formatDiscountLine,
+  formatBillBreakdown,
   formatTransferBlock,
   formatAllParticipantsText,
 } from '@/lib/bankTransferText';
@@ -42,15 +42,8 @@ export function BillSummary({
   };
 
   const handleCopyBill = async (bill: ParticipantBill) => {
-    const itemDetails = bill.items
-      .map((pItem) => `  - ${pItem.item.name}: ${formatIDR(pItem.share_amount)}`)
-      .join('\n');
-
     const text = `${bill.participant.name}'s Bill:
-${itemDetails}
-  Subtotal: ${formatIDR(bill.subtotal)}${formatDiscountLine(bill)}
-  Tax: ${formatIDR(bill.tax_share)}
-  Service: ${formatIDR(bill.service_share)}
+${formatBillBreakdown(bill)}
   ─────────────
   Total: ${formatIDR(bill.total)}${formatTransferBlock(bankAccount)}`;
 
